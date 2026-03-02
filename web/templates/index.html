@@ -8,122 +8,91 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
-            --brand-yellow: #ffcf33;
-            --brand-purple: #3c006b; /* Zepto-style Purple */
-            --brand-green: #1c8932; /* Blinkit-style Green */
+            --brand-green: #1c8932;
+            --brand-purple: #3c006b;
             --bg-gray: #f3f4f6;
+            --sidebar-width: 280px;
         }
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-gray);
-            color: #1f1f1f;
-        }
+        body { font-family: 'Outfit', sans-serif; background-color: #fff; color: #1f1f1f; }
         
-        /* Navbar with search prominence */
+        /* Fixed Top Navbar */
         .navbar {
             background-color: #fff !important;
-            padding: 12px 0;
-            border-bottom: 1px solid #e5e7eb;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border-bottom: 1px solid #eee;
+            z-index: 1030;
         }
-        .navbar-brand { font-weight: 800; color: var(--brand-purple) !important; font-size: 1.5rem; }
-        
-        .search-container {
-            background: #f3f4f6;
-            border-radius: 12px;
-            padding: 8px 16px;
-            width: 100%;
-            max-width: 500px;
-        }
-        .search-input {
-            border: none;
-            background: transparent;
-            width: 100%;
-            outline: none;
-            font-size: 0.95rem;
-        }
+        .navbar-brand { font-weight: 800; color: var(--brand-purple) !important; }
+        .search-container { background: #f3f4f6; border-radius: 12px; padding: 6px 16px; width: 100%; max-width: 600px; }
+        .search-input { border: none; background: transparent; width: 100%; outline: none; }
 
-        /* Category Headers */
-        .section-title { font-weight: 700; font-size: 1.25rem; margin: 24px 0 16px; }
-
-        /* Grocery Card Styling */
-        .card {
-            border: 1px solid #f0f0f0;
-            border-radius: 16px;
-            transition: transform 0.2s ease;
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: calc(100vh - 72px);
+            position: fixed;
+            top: 72px;
+            left: 0;
+            overflow-y: auto;
             background: #fff;
-            padding: 12px;
+            border-right: 1px solid #eee;
+            padding: 20px 0;
         }
-        .card:hover { transform: scale(1.02); }
-        
-        .image-box {
-            background-color: #fff;
-            height: 140px;
+        .category-link {
             display: flex;
             align-items: center;
-            justify-content: center;
-            position: relative;
+            padding: 12px 24px;
+            text-decoration: none;
+            color: #444;
+            font-weight: 500;
+            transition: 0.2s;
         }
-        .image-box img { max-height: 120px; object-fit: contain; }
+        .category-link:hover, .category-link.active {
+            background-color: #f6fff8;
+            color: var(--brand-green);
+            border-right: 4px solid var(--brand-green);
+        }
+        .cat-icon { width: 40px; height: 40px; background: #f3f4f6; border-radius: 8px; margin-right: 12px; }
+
+        /* Main Content Area */
+        .main-content { margin-left: var(--sidebar-width); padding: 24px; margin-top: 10px; }
+        
+        /* Product Card Updates */
+        .card { border: 1px solid #f0f0f0; border-radius: 12px; transition: transform 0.2s; background: #fff; }
+        .card:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .image-box { height: 140px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .image-box img { max-height: 110px; object-fit: contain; }
         
         .delivery-tag {
-            position: absolute;
-            top: 0;
-            left: 0;
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: absolute; top: 8px; left: 8px; background: #fff; border: 1px solid #eee;
+            font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;
         }
 
-        .card-body { padding: 8px 4px 0; }
-        .product-name { 
-            font-weight: 600; 
-            font-size: 0.9rem; 
-            line-height: 1.2; 
-            height: 2.4em; 
-            overflow: hidden; 
-            margin-bottom: 4px;
-        }
-        .product-qty { color: #666; font-size: 0.8rem; margin-bottom: 12px; }
+        .product-name { font-weight: 600; font-size: 0.85rem; height: 2.5em; overflow: hidden; }
+        .product-qty { color: #888; font-size: 0.75rem; margin-bottom: 10px; }
         
-        .price-row { display: flex; justify-content: space-between; align-items: center; }
-        .current-price { font-weight: 700; font-size: 1rem; }
-        
-        /* The iconic "ADD" button */
         .btn-add {
-            color: var(--brand-green);
-            background: #fff;
-            border: 1px solid var(--brand-green);
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            padding: 4px 18px;
-            text-transform: uppercase;
-            transition: all 0.2s;
+            color: var(--brand-green); background: #fff; border: 1px solid var(--brand-green);
+            border-radius: 6px; font-weight: 700; font-size: 0.8rem; padding: 4px 16px;
         }
-        .btn-add:hover {
-            background: var(--brand-green);
-            color: #fff;
+        .btn-add:hover { background: var(--brand-green); color: #fff; }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { margin-left: 0; }
         }
     </style>
 </head>
 <body>
 
     <nav class="navbar sticky-top">
-        <div class="container d-flex justify-content-between align-items-center">
+        <div class="container-fluid px-4 d-flex justify-content-between">
             <a class="navbar-brand" href="/">QUICKSTORE</a>
-            
             <div class="search-container d-none d-md-block">
-                <input type="text" class="search-input" placeholder="Search 'Aashirvaad Atta' or 'Basmati Rice'...">
+                <input type="text" class="search-input" placeholder="Search for 'Rice', 'Atta' or 'Oil'...">
             </div>
-
             <div class="d-flex align-items-center gap-3">
                 {% if current_user.is_authenticated %}
-                    <a href="/logout" class="btn btn-sm btn-outline-dark rounded-pill px-3">Logout</a>
+                    <a href="/logout" class="btn btn-sm btn-outline-dark rounded-pill">Logout</a>
                 {% else %}
                     <a href="/login" class="text-dark fw-bold text-decoration-none small">Login</a>
                 {% endif %}
@@ -132,36 +101,46 @@
         </div>
     </nav>
 
-    <main class="container py-4">
-        <div class="rounded-4 mb-4 p-4 text-white d-flex align-items-center justify-content-between" 
-             style="background: linear-gradient(90deg, #3c006b 0%, #662d91 100%);">
-            <div>
-                <h2 class="fw-bold mb-0">Groceries delivered in 10 minutes</h2>
-                <p class="mb-0 opacity-75">Rice, Wheat, Pulse & more at best prices.</p>
-            </div>
-            <div class="d-none d-md-block">
-                <span class="badge bg-warning text-dark fs-6">8 MINS DELIVERY</span>
-            </div>
+    <aside class="sidebar">
+        <a href="#" class="category-link active">
+            <div class="cat-icon"></div> Atta, Rice & Dal
+        </a>
+        <a href="#" class="category-link">
+            <div class="cat-icon"></div> Oil, Ghee & Masala
+        </a>
+        <a href="#" class="category-link">
+            <div class="cat-icon"></div> Dairy, Bread & Eggs
+        </a>
+        <a href="#" class="category-link">
+            <div class="cat-icon"></div> Snacks & Munchies
+        </a>
+        <a href="#" class="category-link">
+            <div class="cat-icon"></div> Fruits & Vegetables
+        </a>
+    </aside>
+
+    <main class="main-content">
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <h4 class="fw-bold mb-0">Buy Atta, Rice & Dal Online</h4>
+            <span class="text-muted small">Showing {{ products|length }} items</span>
         </div>
 
-        <h3 class="section-title">Staples: Rice & Wheat</h3>
-        
-        <div class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-3">
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
             {% for product in products %}
             <div class="col">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 p-2">
                     <div class="image-box">
                         <span class="delivery-tag">8 MINS</span>
                         <img src="https://placehold.co/300x300/ffffff/1c8932?text={{ product.item|replace(' ', '+') }}" 
                              alt="{{ product.item }}">
                     </div>
-                    <div class="card-body">
-                        <div class="product-name">{{ product.item }}</div>
+                    <div class="card-body p-1">
+                        <div class="product-name mt-2">{{ product.item }}</div>
                         <div class="product-qty">{{ product.category }}</div>
                         
-                        <div class="price-row">
-                            <span class="current-price">₹{{ product.price }}</span>
-                            <a href="/add_to_cart/{{ product._id }}" class="btn btn-add">Add</a>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="fw-bold">₹{{ product.price }}</span>
+                            <a href="/add_to_cart/{{ product._id }}" class="btn btn-add">ADD</a>
                         </div>
                     </div>
                 </div>
@@ -169,12 +148,6 @@
             {% endfor %}
         </div>
     </main>
-
-    <footer class="py-4 bg-white mt-5 border-top">
-        <div class="container text-center">
-            <p class="text-muted x-small">&copy; 2026 QuickStore Grocery. Local delivery in Burari, Delhi.</p>
-        </div>
-    </footer>
 
 </body>
 </html>
