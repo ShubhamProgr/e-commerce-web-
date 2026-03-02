@@ -1,36 +1,27 @@
-import pymongo
-import certifi
-import ssl
-import os
+import os, certifi, pymongo
 from dotenv import load_dotenv
 
-# 1. Load .env from the parent directory (global level)
-# This looks up one level from the 'web' folder to find your .env file
-env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-load_dotenv(env_path)
+# Load connection and connect to Atlas
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+client = pymongo.MongoClient(os.getenv("MONGO_URL"), tlsCAFile=certifi.where())
+db = client["online_store"]
 
-# 2. Get the URL from environment variables
-url = os.getenv("MONGO_URL")
+def seed_professional_data():
+    # Modern e-commerce schema: include SKUs, brands, and high-quality placeholders
+    test_products = [
+        {"sku": "LPT-MB-M3", "item": "MacBook Air M3", "brand": "Apple", "category": "Laptops", 
+         "price": 114900, "stock": 5, "image": "https://placehold.co/600x400/f8f9fa/0d6efd?text=MacBook+Air+M3"},
+        {"sku": "PHN-IP-15", "item": "iPhone 15 Pro", "brand": "Apple", "category": "Phones", 
+         "price": 134900, "stock": 8, "image": "https://placehold.co/600x400/f8f9fa/0d6efd?text=iPhone+15+Pro"},
+        {"sku": "ACC-MX-3S", "item": "Logitech MX Master 3S", "brand": "Logitech", "category": "Accessories", 
+         "price": 10995, "stock": 15, "image": "https://placehold.co/600x400/f8f9fa/0d6efd?text=MX+Master+3S"},
+        {"sku": "MON-SAM-G7", "item": "Samsung Odyssey G7", "brand": "Samsung", "category": "Monitors", 
+         "price": 45000, "stock": 3, "image": "https://placehold.co/600x400/f8f9fa/0d6efd?text=Odyssey+G7"}
+    ]
 
-# SSL Certificate setup for Windows/macOS
-ca = certifi.where()
+    db.catalog.delete_many({}) # Wipe old testing data
+    db.catalog.insert_many(test_products)
+    print("✅ Professional testing catalog inserted with images!")
 
-try:
-    # 3. Connect using the URL from your .env and the CA file
-    client = pymongo.MongoClient(url, tlsCAFile=ca)
-    
-    db = client["online_store"]
-    products = db["catalog"]
-
-    sample_product = {
-        "item": "Mechanical Keyboard",
-        "category": "Peripherals",
-        "price": 3500,
-        "stock": 15
-    }
-
-    result = products.insert_one(sample_product)
-    print(f"Success! Product inserted with ID: {result.inserted_id}")
-
-except Exception as e:
-    print(f"An error occurred: {e}")
+if __name__ == "__main__":
+    seed_professional_data()
