@@ -75,6 +75,22 @@ def admin_dashboard():
     products = list(db.catalog.find())
     return render_template('admin_dashboard.html', products=products)
 
+@app.route('/admin/users')
+@login_required
+def manage_users():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    all_users = list(db.users.find())
+    return render_template('manage_users.html', users=all_users)
+
+@app.route('/admin/make_admin/<user_id>')
+@login_required
+def make_admin(user_id):
+    if current_user.role == 'admin':
+        db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"role": "admin"}})
+        flash("User promoted to Admin")
+    return redirect(url_for('manage_users'))
+
 @app.route('/admin/edit/<id>', methods=['POST'])
 @login_required
 def edit_product(id):
