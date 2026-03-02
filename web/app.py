@@ -35,7 +35,6 @@ def load_user(user_id):
 
 # --- PUBLIC ROUTES ---
 @app.route('/')
-@login_required
 def index():
     products = list(db.catalog.find())
     return render_template('index.html', products=products)
@@ -90,6 +89,29 @@ def make_admin(user_id):
         db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"role": "admin"}})
         flash("User promoted to Admin")
     return redirect(url_for('manage_users'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        # Check if username exists in 'users' collection
+        if db.users.find_one({"username": username}):
+            flash('Username already exists. Please choose another.')
+            return redirect(url_for('register'))
+        
+        # Create new customer document
+        new_user = {
+            "username": username,
+            "password": generate_password_hash(password),
+            "role": "customer" # Default role for new sign-ups
+        }
+        db.users.insert_one(new_user)
+        flash('Registration successful! Please login.')
+        return redirect(url_for('login'))
+        
+    return render_template('register.html')
 
 @app.route('/admin/edit/<id>', methods=['POST'])
 @login_required
