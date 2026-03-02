@@ -9,15 +9,15 @@ db = client["online_store"]
 def seed_professional_data():
     # Modern e-commerce schema: include SKUs, brands, and high-quality placeholders
     test_products = [
-        {"sku": "LPT-MB-M3", "item": "MacBook Air M3", "brand": "Apple", "category": "Laptops", 
-         "price": 114900, "stock": 5, "image": "https://placehold.co/600x400/f8f9fa/0d6efd?text=MacBook+Air+M3"},
-        {"sku": "PHN-IP-15", "item": "iPhone 15 Pro", "brand": "Apple", "category": "Phones", 
-         "price": 134900, "stock": 8, "image": "https://placehold.co/600x400/f8f9fa/0d6efd?text=iPhone+15+Pro"},
-        {"sku": "ACC-MX-3S", "item": "Logitech MX Master 3S", "brand": "Logitech", "category": "Accessories", 
-         "price": 10995, "stock": 15, "image": "https://placehold.co/600x400/f8f9fa/0d6efd?text=MX+Master+3S"},
-        {"sku": "MON-SAM-G7", "item": "Samsung Odyssey G7", "brand": "Samsung", "category": "Monitors", 
-         "price": 45000, "stock": 3, "image": "https://placehold.co/600x400/f8f9fa/0d6efd?text=Odyssey+G7"}
-    ]
+    {"item": "Aashirvaad Shudh Chakki Atta", "brand": "Aashirvaad", "category": "Atta & Rice", 
+     "price": 495, "stock": 50, "image": "https://placehold.co/400x400/fff7e6/d48806?text=Atta+10kg"},
+    {"item": "Daawat Rozana Basmati Rice", "brand": "Daawat", "category": "Atta & Rice", 
+     "price": 380, "stock": 30, "image": "https://placehold.co/400x400/f6ffed/389e0d?text=Rice+5kg"},
+    {"item": "Fortune Soyabean Oil", "brand": "Fortune", "category": "Oil & Ghee", 
+     "price": 145, "stock": 100, "image": "https://placehold.co/400x400/fff1f0/cf1322?text=Oil+1L"},
+    {"item": "Amul Butter", "brand": "Amul", "category": "Dairy & Eggs", 
+     "price": 56, "stock": 200, "image": "https://placehold.co/400x400/feffe6/d4b106?text=Butter"}
+]
 
     db.catalog.delete_many({}) # Wipe old testing data
     db.catalog.insert_many(test_products)
