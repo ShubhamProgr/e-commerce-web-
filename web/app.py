@@ -95,16 +95,6 @@ def admin_dashboard():
     products = list(db.catalog.find())
     return render_template('admin_dashboard.html', products=products)
 
-@app.route('/admin/manage-inventory')
-@login_required
-def manage_inventory():
-    if current_user.role != 'admin':
-        return "Access Denied", 403
-    
-    # Fetch products for the management table
-    products = list(db.catalog.find())
-    return render_template('manage_inventory.html', products=products)
-
 @app.route('/admin/users')
 @login_required
 def manage_users():
@@ -154,29 +144,28 @@ def edit_product(id):
             {"$set": {"price": new_price, "stock": new_stock}}
         )
         flash('Product updated successfully')
+    # Redirect back to the main dashboard instead of manage_inventory
     return redirect(url_for('admin_dashboard'))
 
+# 3. ENSURE the add function also redirects to the dashboard
 @app.route('/admin/add-product', methods=['POST'])
 @login_required
 def add_product():
     if current_user.role != 'admin':
         return "Access Denied", 403
     
-    # Collect form data
     new_item = {
         "item": request.form.get('item'),
         "brand": request.form.get('brand'),
         "category": request.form.get('category'),
         "price": int(request.form.get('price')),
         "stock": int(request.form.get('stock')),
-        # You can add a default placeholder if no image is provided
         "image": request.form.get('image') or "https://placehold.co/400x400?text=No+Image"
     }
     
     db.catalog.insert_one(new_item)
     flash('New product added successfully!')
     return redirect(url_for('admin_dashboard'))
-
 # --- CUSTOMER ROUTES ---
 @app.route('/add_to_cart/<product_id>')
 @login_required
