@@ -94,14 +94,13 @@
 
         <div class="d-flex align-items-center gap-2">
     {% if current_user.is_authenticated %}
-        {% if current_user.role == 'admin' %}
-            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-dark rounded-pill px-3 fw-bold me-2">Admin Dashboard</a>
-        {% endif %}
-        <a href="/logout" class="btn btn-sm btn-outline-dark rounded-pill px-3">Logout</a>
+        <span class="small text-muted d-none d-lg-inline">Hi, {{ current_user.username }}</span>
+        <a href="/logout" class="btn btn-sm btn-outline-dark rounded-pill">Logout</a>
     {% else %}
-        <a href="/login" class="btn btn-sm btn-success rounded-pill px-4 fw-bold me-2">Login / Sign Up</a>
+        <a href="/login" class="btn btn-sm btn-success rounded-pill px-4 fw-bold">Login / Sign Up</a>
     {% endif %}
-    <button class="btn btn-dark rounded-pill px-4 btn-sm fw-bold">Cart</button>
+    
+    <a href="/cart" class="btn btn-dark rounded-pill px-4 btn-sm fw-bold">Cart</a>
 </div>
     </div>
 </nav>
