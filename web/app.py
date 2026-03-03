@@ -156,6 +156,27 @@ def edit_product(id):
         flash('Product updated successfully')
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/add-product', methods=['POST'])
+@login_required
+def add_product():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    
+    # Collect form data
+    new_item = {
+        "item": request.form.get('item'),
+        "brand": request.form.get('brand'),
+        "category": request.form.get('category'),
+        "price": int(request.form.get('price')),
+        "stock": int(request.form.get('stock')),
+        # You can add a default placeholder if no image is provided
+        "image": request.form.get('image') or "https://placehold.co/400x400?text=No+Image"
+    }
+    
+    db.catalog.insert_one(new_item)
+    flash('New product added successfully!')
+    return redirect(url_for('admin_dashboard'))
+
 # --- CUSTOMER ROUTES ---
 @app.route('/add_to_cart/<product_id>')
 @login_required
