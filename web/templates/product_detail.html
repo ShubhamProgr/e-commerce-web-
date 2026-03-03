@@ -3,43 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ product.item }} - Details</title>
+    <title>{{ product.item }} - GreenFields Farm Shop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --brand-green: #1b7a40;
+            --brand-green-dark: #14532d;
+        }
+        body {
+            background: radial-gradient(circle at top, #e8f5e9 0, #f9fafb 55%, #f3f4f6 100%);
+        }
+        .farm-tag {
+            background-color: #ecfdf3;
+            color: var(--brand-green-dark);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .btn-farm-primary {
+            background-color: var(--brand-green-dark);
+            border-color: var(--brand-green-dark);
+            border-radius: 999px;
+            font-weight: 700;
+        }
+        .btn-farm-primary:hover {
+            background-color: #052e16;
+            border-color: #052e16;
+        }
+        .btn-farm-outline {
+            border-radius: 999px;
+            border-color: var(--brand-green-dark);
+            color: var(--brand-green-dark);
+        }
+        .btn-farm-outline:hover {
+            background-color: var(--brand-green-dark);
+            color: #f9fafb;
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <nav class="navbar navbar-dark bg-dark mb-4">
+    <nav class="navbar mb-4" style="background-color: #ffffff; border-bottom: 1px solid #e5e7eb;">
         <div class="container">
-            <a class="navbar-brand" href="/">← Back to Shop</a>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <span>←</span>
+                <span class="fw-semibold">Back to farm shop</span>
+            </a>
         </div>
     </nav>
 
-    <div class="container mt-5">
-        <div class="card shadow-lg border-0">
+    <div class="container mt-4 mb-5">
+        <div class="card shadow-lg border-0 rounded-4">
             <div class="row g-0">
                 <div class="col-md-6">
-                    <img src="https://via.placeholder.com/600x600?text={{ product.item }}" class="img-fluid rounded-start" alt="{{ product.item }}">
+                    <img src="https://via.placeholder.com/600x600/fef9c3/166534?text={{ product.item }}" class="img-fluid rounded-start" alt="{{ product.item }}">
                 </div>
                 <div class="col-md-6">
                     <div class="card-body p-5">
-                        <h1 class="display-5 fw-bold">{{ product.item }}</h1>
-                        <p class="lead badge bg-secondary fs-6">{{ product.category }}</p>
+                        <h1 class="h2 fw-bold mb-1">{{ product.item }}</h1>
+                        <span class="farm-tag mb-2 d-inline-block">{{ product.category }}</span>
                         <hr>
-                        <h2 class="text-success mb-4">Price: ₹{{ product.price }}</h2>
+                        <h2 class="text-success mb-3">₹{{ product.price }}</h2>
                         
                         <div class="mb-4">
-                            <h5>Product Description</h5>
+                            <h5>From the GreenFields pantry</h5>
                             <p class="text-secondary">
-                                This is a premium {{ product.item }} designed for high performance and reliability. 
-                                Perfect for your tech setup or daily use.
+                                Carefully sourced {{ product.item }} ideal for everyday cooking. Pairs perfectly with dals,
+                                pulses and other staples from our farm shop.
                             </p>
                         </div>
 
-                        <p class="mb-4"><strong>Inventory Status:</strong> {{ product.stock }} items available</p>
+                        <p class="mb-4"><strong>Inventory status:</strong> {{ product.stock }} packs available</p>
                         
-                        <div class="d-grid">
-                            <button class="btn btn-primary btn-lg mb-2">Buy Now</button>
-                            <button class="btn btn-outline-success">Add to Wishlist</button>
+                        <div class="d-grid gap-2">
+                            <a href="/add_to_cart/{{ product._id }}" class="btn btn-farm-primary btn-lg">Add to cart</a>
+                            <a href="/" class="btn btn-farm-outline">Continue browsing grains & pulses</a>
                         </div>
                     </div>
                 </div>

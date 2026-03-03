@@ -3,150 +3,336 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickStore | Groceries in Minutes</title>
+    <title>GreenFields Farm Shop</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
-            --brand-green: #1c8932;
-            --brand-purple: #3c006b;
-            --bg-gray: #f3f4f6;
-            --sidebar-width: 280px;
+            --brand-green: #1b7a40;
+            --brand-green-dark: #14532d;
+            --brand-gold: #e0aa3e;
+            --bg-soft: #f3f8f3;
         }
-        body { font-family: 'Outfit', sans-serif; background-color: #fff; color: #1f1f1f; }
-        
-        /* Fixed Top Navbar */
-        .navbar {
-            background-color: #fff !important;
-            border-bottom: 1px solid #eee;
-            z-index: 1030;
-        }
-        .navbar-brand { font-weight: 800; color: var(--brand-purple) !important; }
-        .search-container { background: #f3f4f6; border-radius: 12px; padding: 6px 16px; width: 100%; max-width: 600px; }
-        .search-input { border: none; background: transparent; width: 100%; outline: none; }
 
-        /* Sidebar Styling */
-        .sidebar {
-            width: var(--sidebar-width);
-            height: calc(100vh - 72px);
-            position: fixed;
-            top: 72px;
-            left: 0;
-            overflow-y: auto;
-            background: #fff;
-            border-right: 1px solid #eee;
-            padding: 20px 0;
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top, #e8f5e9 0, #f9fafb 55%, #f3f4f6 100%);
+            color: #1f2933;
         }
-        .category-link {
+
+        .farm-shell {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        .farm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .farm-logo-lockup {
             display: flex;
             align-items: center;
-            padding: 12px 24px;
-            text-decoration: none;
-            color: #444;
+            gap: 14px;
+        }
+
+        .farm-logo-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            background: linear-gradient(145deg, var(--brand-green), var(--brand-green-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fefce8;
+            font-size: 1.4rem;
+        }
+
+        .farm-title-block h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin: 0;
+            color: var(--brand-green-dark);
+        }
+
+        .farm-title-block p {
+            margin: 2px 0 0;
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .farm-cta-area {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .farm-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .farm-tag {
+            font-size: 0.7rem;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background-color: #ecfdf3;
+            border: 1px dashed rgba(34, 197, 94, 0.4);
+            color: var(--brand-green-dark);
             font-weight: 500;
-            transition: 0.2s;
         }
-        .category-link:hover, .category-link.active {
-            background-color: #f6fff8;
-            color: var(--brand-green);
-            border-right: 4px solid var(--brand-green);
-        }
-        .cat-icon { width: 40px; height: 40px; background: #f3f4f6; border-radius: 8px; margin-right: 12px; }
 
-        /* Main Content Area */
-        .main-content { margin-left: var(--sidebar-width); padding: 24px; margin-top: 10px; }
-        
-        /* Product Card Updates */
-        .card { border: 1px solid #f0f0f0; border-radius: 12px; transition: transform 0.2s; background: #fff; }
-        .card:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .image-box { height: 140px; display: flex; align-items: center; justify-content: center; position: relative; }
-        .image-box img { max-height: 110px; object-fit: contain; }
-        
+        .farm-auth-buttons a {
+            font-size: 0.75rem;
+            border-radius: 999px;
+            padding-inline: 18px;
+            font-weight: 600;
+        }
+
+        .btn-farm-outline {
+            border-color: var(--brand-green-dark);
+            color: var(--brand-green-dark);
+        }
+
+        .btn-farm-outline:hover {
+            background-color: var(--brand-green-dark);
+            color: #f9fafb;
+        }
+
+        .btn-farm-solid {
+            background: var(--brand-green-dark);
+            border-color: var(--brand-green-dark);
+        }
+
+        .btn-farm-solid:hover {
+            background: #052e16;
+            border-color: #052e16;
+        }
+
+        .farm-subheader {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 12px;
+            margin-top: 8px;
+        }
+
+        .farm-subheader h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--brand-green-dark);
+            margin: 0;
+        }
+
+        .farm-subheader span {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .farm-pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .farm-pill {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            border-radius: 999px;
+            background-color: #fefce8;
+            border: 1px solid rgba(234, 179, 8, 0.6);
+            color: #854d0e;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .farm-pill span {
+            font-size: 0.8rem;
+        }
+
+        /* Product grid */
+        .farm-grid {
+            background-color: #ffffff;
+            border-radius: 18px;
+            padding: 18px 16px 10px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .card {
+            border: 1px solid #edf2f7;
+            border-radius: 14px;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(34, 197, 94, 0.4);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+        }
+
+        .image-box {
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at top, #fef9c3 0, #ecfdf3 55%, #f9fafb 100%);
+            border-radius: 10px;
+        }
+
+        .image-box img {
+            max-height: 110px;
+            object-fit: contain;
+        }
+
         .delivery-tag {
-            position: absolute; top: 8px; left: 8px; background: #fff; border: 1px solid #eee;
-            font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #e5e7eb;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
-        .product-name { font-weight: 600; font-size: 0.85rem; height: 2.5em; overflow: hidden; }
-        .product-qty { color: #888; font-size: 0.75rem; margin-bottom: 10px; }
-        
-        .btn-add {
-            color: var(--brand-green); background: #fff; border: 1px solid var(--brand-green);
-            border-radius: 6px; font-weight: 700; font-size: 0.8rem; padding: 4px 16px;
+        .product-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            height: 2.4em;
+            overflow: hidden;
         }
-        .btn-add:hover { background: var(--brand-green); color: #fff; }
+
+        .product-qty {
+            color: #6b7280;
+            font-size: 0.75rem;
+            margin-bottom: 10px;
+        }
+
+        .price-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .btn-add {
+            color: var(--brand-green-dark);
+            background: #ffffff;
+            border: 1px solid var(--brand-green-dark);
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 4px 16px;
+        }
+
+        .btn-add:hover {
+            background: var(--brand-green-dark);
+            color: #f9fafb;
+        }
 
         @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main-content { margin-left: 0; }
+            .farm-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .farm-cta-area {
+                align-items: flex-start;
+            }
+
+            .farm-shell {
+                padding-inline: 12px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="farm-shell">
+        <header class="farm-header">
+            <div>
+                <div class="farm-logo-lockup">
+                    <div class="farm-logo-circle">🌾</div>
+                    <div class="farm-title-block">
+                        <h1>GreenFields Farm Shop</h1>
+                        <p>Whole grains, pulses & harvest staples directly from the farm.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="farm-cta-area">
+                <div class="farm-tags">
+                    <span class="farm-tag">Wheat & multigrain flour</span>
+                    <span class="farm-tag">Toor, moong & chana dal</span>
+                    <span class="farm-tag">Barley, millets & oats</span>
+                </div>
+                <div class="farm-auth-buttons d-flex gap-2 mt-1">
+                    {% if current_user.is_authenticated %}
+                        <span class="small text-muted d-none d-md-inline">Hi, {{ current_user.username }}</span>
+                        <a href="/logout" class="btn btn-sm btn-farm-outline">Logout</a>
+                    {% else %}
+                        <a href="/login" class="btn btn-sm btn-farm-outline">Login / Sign Up</a>
+                    {% endif %}
+                    <a href="/cart" class="btn btn-sm btn-farm-solid text-white"> Dashboard </a>
+                </div>
+            </div>
+        </header>
 
-    <nav class="navbar sticky-top">
-    <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
-        <a class="navbar-brand" href="/">QUICKSTORE</a>
-        
-        <div class="search-container d-none d-md-block">
-            <input type="text" class="search-input" placeholder="Search for 'Rice', 'Atta' or 'Oil'...">
-        </div>
+        <section>
+            <div class="farm-subheader">
+                <h2>Farm pantry essentials</h2>
+                <span>Showing {{ products|length }} items from our latest harvest</span>
+            </div>
 
-        <div class="d-flex align-items-center gap-2">
-    {% if current_user.is_authenticated %}
-        <span class="small text-muted d-none d-lg-inline">Hi, {{ current_user.username }}</span>
-        <a href="/logout" class="btn btn-sm btn-outline-dark rounded-pill">Logout</a>
-    {% else %}
-        <a href="/login" class="btn btn-sm btn-success rounded-pill px-4 fw-bold">Login / Sign Up</a>
-    {% endif %}
-    
-    <a href="/cart" class="btn btn-dark rounded-pill px-4 btn-sm fw-bold">Cart</a>
-</div>
-    </div>
-</nav>
+            <div class="farm-pill-row">
+                <div class="farm-pill">
+                    <span>🌾</span>
+                    <span>Wheat & flours</span>
+                </div>
+                <div class="farm-pill">
+                    <span>🌱</span>
+                    <span>Pulses & lentils</span>
+                </div>
+                <div class="farm-pill">
+                    <span>🌾</span>
+                    <span>Barley & millets</span>
+                </div>
+                <div class="farm-pill">
+                    <span>🫘</span>
+                    <span>Beans & grams</span>
+                </div>
+            </div>
 
-    <aside class="sidebar">
-        <a href="#" class="category-link active">
-            <div class="cat-icon"></div> Atta, Rice & Dal
-        </a>
-        <a href="#" class="category-link">
-            <div class="cat-icon"></div> Oil, Ghee & Masala
-        </a>
-        <a href="#" class="category-link">
-            <div class="cat-icon"></div> Dairy, Bread & Eggs
-        </a>
-        <a href="#" class="category-link">
-            <div class="cat-icon"></div> Snacks & Munchies
-        </a>
-        <a href="#" class="category-link">
-            <div class="cat-icon"></div> Fruits & Vegetables
-        </a>
-    </aside>
-
-    <main class="main-content">
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-success alert-dismissible fade show small py-2 mb-4 border-0 rounded-3 shadow-sm" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close small" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-
-        <div class="d-flex justify-content-between align-items-end mb-4">
-            <h4 class="fw-bold mb-0">Buy Atta, Rice & Dal Online</h4>
-            <span class="text-muted small">Showing {{ products|length }} items</span>
-        </div>
-
-        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+            <div class="farm-grid">
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    {% for message in messages %}
+                      <div class="alert alert-success alert-dismissible fade show small py-2 mb-3 border-0 rounded-3 shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close small" data-bs-dismiss="alert" aria-label="Close"></button>
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
             {% for product in products %}
             <div class="col">
                 <div class="card h-100 p-2">
                     <div class="image-box">
-                        <span class="delivery-tag">8 MINS</span>
-                        <img src="https://placehold.co/300x300/ffffff/1c8932?text={{ product.item|replace(' ', '+') }}" 
+                        <span class="delivery-tag">FRESH HARVEST</span>
+                        <img src="https://placehold.co/300x300/fef9c3/166534?text={{ product.item|replace(' ', '+') }}" 
                              alt="{{ product.item }}">
                     </div>
                     <div class="card-body p-1">
@@ -154,7 +340,10 @@
                         <div class="product-qty">{{ product.category }}</div>
                         
                         <div class="d-flex justify-content-between align-items-center mt-2">
-                            <span class="fw-bold">₹{{ product.price }}</span>
+                            <div class="d-flex flex-column">
+                                <span class="price-label">Per pack</span>
+                                <span class="fw-bold">₹{{ product.price }}</span>
+                            </div>
                             <a href="/add_to_cart/{{ product._id }}" class="btn btn-add">ADD</a>
                         </div>
                     </div>
@@ -162,7 +351,9 @@
             </div>
             {% endfor %}
         </div>
-    </main>
+            </div>
+        </section>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

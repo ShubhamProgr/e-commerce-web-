@@ -2,43 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard | QuickStore</title>
+    <title>Admin Dashboard | GreenFields Farm Shop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f3f4f6; }
-        .admin-card { border-radius: 15px; border: none; }
-        .header-bg { background-color: #3c006b; color: white; }
+        :root {
+            --brand-green: #1b7a40;
+            --brand-green-dark: #14532d;
+        }
+        body { background: radial-gradient(circle at top, #e8f5e9 0, #f9fafb 55%, #f3f4f6 100%); }
+        .admin-card { border-radius: 18px; border: none; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08); }
+        .header-bg { background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark)); color: white; }
+        .badge-category { background-color: #ecfdf3; color: var(--brand-green-dark); }
+        .btn-farm-outline { border-color: #e5e7eb; color: #111827; background-color: #ffffff; }
+        .btn-farm-outline:hover { border-color: var(--brand-green-dark); color: var(--brand-green-dark); }
     </style>
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-dark bg-dark mb-4">
+<body class="bg-transparent">
+    <nav class="navbar mb-4" style="background-color: #ffffff; border-bottom: 1px solid #e5e7eb;">
         <div class="container">
-            <span class="navbar-brand">Admin Panel - Welcome {{ current_user.username }}</span>
+            <span class="navbar-brand fw-bold text-success">GreenFields Admin · {{ current_user.username }}</span>
             <div>
-                <a href="/" class="btn btn-outline-light btn-sm me-2">View Store</a>
-                <a href="/logout" class="btn btn-outline-danger btn-sm">Logout</a>
+                <a href="/" class="btn btn-sm btn-farm-outline me-2">View Farm Shop</a>
+                <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
             </div>
         </div>
     </nav>
 
     <div class="container pb-5">
-        <div class="card admin-card shadow-sm mb-5">
+        <div class="card admin-card mb-5">
             <div class="card-header header-bg py-3">
-                <h5 class="mb-0 fw-bold">Add New Product to Inventory</h5>
+                <h5 class="mb-0 fw-bold">Add New Harvest Item</h5>
             </div>
             <div class="card-body p-4">
                 <form action="/admin/add-product" method="POST" class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold">Product Name</label>
-                        <input type="text" name="item" class="form-control" placeholder="e.g. Daawat Basmati Rice" required>
+                        <label class="form-label small fw-bold">Item name</label>
+                        <input type="text" name="item" class="form-control" placeholder="e.g. Sharbati Wheat Flour" required>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold">Brand</label>
-                        <input type="text" name="brand" class="form-control" placeholder="e.g. Daawat" required>
+                        <label class="form-label small fw-bold">Brand / farm</label>
+                        <input type="text" name="brand" class="form-control" placeholder="e.g. GreenFields Co-op" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Category</label>
-                        <input type="text" name="category" class="form-control" placeholder="e.g. Atta & Rice" required>
+                        <input type="text" name="category" class="form-control" placeholder="e.g. Wheat & Flours / Pulses" required>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small fw-bold">Price (₹)</label>
@@ -53,13 +60,13 @@
                         <input type="url" name="image" class="form-control" placeholder="https://placehold.co/400x400?text=Product">
                     </div>
                     <div class="col-12 text-end">
-                        <button type="submit" class="btn btn-success px-5 fw-bold">Add Product</button>
+                        <button type="submit" class="btn btn-success px-5 fw-bold">Add item</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <h3 class="mb-4 fw-bold">Manage Current Inventory</h3>
+        <h3 class="mb-4 fw-bold">Manage farm inventory</h3>
         
         {% with messages = get_flashed_messages() %}
           {% if messages %}
@@ -88,7 +95,7 @@
                     <tr>
                         <form action="/admin/edit/{{ product._id }}" method="POST">
                             <td><strong>{{ product.item }}</strong></td>
-                            <td><span class="badge bg-secondary">{{ product.category }}</span></td>
+                            <td><span class="badge badge-category">{{ product.category }}</span></td>
                             <td>
                                 <input type="number" name="price" class="form-control form-control-sm" value="{{ product.price }}" style="width: 100px;">
                             </td>
