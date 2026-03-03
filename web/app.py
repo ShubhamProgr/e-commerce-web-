@@ -50,15 +50,36 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        
+        # 1. Search for existing user
         user_data = db.users.find_one({"username": username})
         
-        if user_data and check_password_hash(user_data['password'], password):
-            user_obj = User(user_data)
+        if user_data:
+            # Existing User: Verify password (works for 'admin' and others)
+            if check_password_hash(user_data['password'], password):
+                user_obj = User(user_data)
+                login_user(user_obj)
+                return redirect(url_for('index'))
+            else:
+                flash('Invalid password for existing user.')
+        else:
+            # 2. New User: Auto-register as 'customer'
+            new_user_data = {
+                "username": username,
+                "password": generate_password_hash(password),
+                "role": "customer"
+            }
+            result = db.users.insert_one(new_user_data)
+            
+            # Log in the newly created user immediately
+            new_user_data['_id'] = result.inserted_id
+            user_obj = User(new_user_data)
             login_user(user_obj)
+            
+            flash(f'Welcome! Account created for {username}.')
             return redirect(url_for('index'))
-        flash('Invalid username or password')
+            
     return render_template('login.html')
-
 @app.route('/logout')
 @login_required
 def logout():

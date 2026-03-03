@@ -74,7 +74,8 @@
     <div class="register-card shadow-sm">
         <div class="text-center mb-4">
             <a href="/" class="brand-logo">QUICKSTORE</a>
-            <p class="text-muted small">Create an account to order staples like <strong>Rice</strong> and <strong>Wheat</strong> delivered in minutes.</p>
+            <h5 class="fw-bold mb-1">Create an Account</h5>
+            <p class="text-muted small">Join us to order staples like <strong>Rice</strong> and <strong>Wheat</strong> instantly.</p>
         </div>
 
         {% with messages = get_flashed_messages() %}
@@ -87,21 +88,21 @@
 
         <form method="POST" action="/register">
             <div class="mb-3">
-                <label class="form-label small fw-bold text-secondary">USERNAME</label>
+                <label class="form-label small fw-bold text-secondary text-uppercase">Username</label>
                 <input type="text" name="username" class="form-control" placeholder="Choose a unique name" required autofocus>
             </div>
             <div class="mb-4">
-                <label class="form-label small fw-bold text-secondary">PASSWORD</label>
+                <label class="form-label small fw-bold text-secondary text-uppercase">Password</label>
                 <input type="password" name="password" class="form-control" placeholder="Create a strong password" required>
             </div>
             <div class="d-grid">
-                <button type="submit" class="btn btn-register">Get Started</button>
+                <button type="submit" class="btn btn-register">Sign Up</button>
             </div>
         </form>
 
-        <div class="text-center mt-4">
-            <p class="small text-muted mb-0">Already a member?</p>
-            <a href="/login" class="login-link">Sign in to your account</a>
+        <div class="text-center mt-4 pt-3 border-top">
+            <p class="small text-muted mb-0">Already have an account?</p>
+            <a href="/login" class="login-link">Sign in instead</a>
         </div>
     </div>
 </div>
