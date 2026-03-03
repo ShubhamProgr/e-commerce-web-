@@ -166,6 +166,7 @@ def add_product():
     db.catalog.insert_one(new_item)
     flash('New product added successfully!')
     return redirect(url_for('admin_dashboard'))
+
 # --- CUSTOMER ROUTES ---
 @app.route('/add_to_cart/<product_id>')
 @login_required
