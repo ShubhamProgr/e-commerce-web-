@@ -74,6 +74,16 @@ def admin_dashboard():
     products = list(db.catalog.find())
     return render_template('admin_dashboard.html', products=products)
 
+@app.route('/admin/manage-inventory')
+@login_required
+def manage_inventory():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    
+    # Fetch products for the management table
+    products = list(db.catalog.find())
+    return render_template('manage_inventory.html', products=products)
+
 @app.route('/admin/users')
 @login_required
 def manage_users():
@@ -96,19 +106,18 @@ def register():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        # Check if username exists in 'users' collection
+        # Prevent duplicate usernames
         if db.users.find_one({"username": username}):
-            flash('Username already exists. Please choose another.')
+            flash('Username already exists!')
             return redirect(url_for('register'))
         
-        # Create new customer document
-        new_user = {
+        # Save as a customer by default
+        db.users.insert_one({
             "username": username,
             "password": generate_password_hash(password),
-            "role": "customer" # Default role for new sign-ups
-        }
-        db.users.insert_one(new_user)
-        flash('Registration successful! Please login.')
+            "role": "customer"
+        })
+        flash('Success! Please log in.')
         return redirect(url_for('login'))
         
     return render_template('register.html')

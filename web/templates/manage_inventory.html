@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Inventory | QuickStore Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; color: #333; }
+        .table-container { background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .btn-save { background-color: #34a853; color: white; border: none; font-weight: 600; }
+        .btn-save:hover { background-color: #2d8a45; color: white; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-light bg-white border-bottom mb-4">
+        <div class="container">
+            <span class="navbar-brand fw-bold">Admin: {{ current_user.username }}</span>
+            <a href="/" class="btn btn-outline-secondary btn-sm">View Storefront</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold">Inventory Control</h2>
+            <span class="badge bg-primary px-3 py-2">Total Items: {{ products|length }}</span>
+        </div>
+
+        <div class="table-container">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr class="small text-uppercase fw-bold text-muted">
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Price (₹)</th>
+                        <th>Stock Qty</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <form action="/admin/edit/{{ product._id }}" method="POST">
+                            <td class="fw-bold">{{ product.item }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ product.category }}</span></td>
+                            <td>
+                                <input type="number" name="price" class="form-control form-control-sm" value="{{ product.price }}" style="width: 110px;">
+                            </td>
+                            <td>
+                                <input type="number" name="stock" class="form-control form-control-sm {% if product.stock < 10 %}border-danger bg-danger-subtle{% endif %}" value="{{ product.stock }}" style="width: 90px;">
+                            </td>
+                            <td class="text-end">
+                                <button type="submit" class="btn btn-sm btn-save px-4 rounded-pill">Update</button>
+                            </td>
+                        </form>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
