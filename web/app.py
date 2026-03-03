@@ -1,5 +1,9 @@
 import os
 import certifi
+import random
+import smtplib
+from datetime import datetime, timedelta
+from email.mime.text import MIMEText
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -33,6 +37,33 @@ def load_user(user_id):
     user_data = db.users.find_one({"_id": ObjectId(user_id)})
     return User(user_data) if user_data else None
 
+
+def generate_otp_code() -> str:
+    return f"{random.randint(100000, 999999)}"
+
+
+def send_otp_email(to_email: str, otp_code: str) -> None:
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    sender_email = os.getenv("EMAIL_SENDER") or smtp_user
+
+    if not (smtp_user and smtp_password and to_email and sender_email):
+        app.logger.info(f"OTP for {to_email}: {otp_code}")
+        return
+
+    body = f"Your GreenFields Farm Shop verification code is {otp_code}. It will expire in 10 minutes."
+    msg = MIMEText(body)
+    msg["Subject"] = "Your GreenFields verification code"
+    msg["From"] = sender_email
+    msg["To"] = to_email
+
+    with smtplib.SMTP(smtp_host, smtp_port) as server:
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        server.send_message(msg)
+
 # --- PUBLIC ROUTES ---
 @app.route('/')
 def index():
@@ -55,29 +86,20 @@ def login():
         user_data = db.users.find_one({"username": username})
         
         if user_data:
-            # Existing User: Verify password (works for 'admin' and others)
-            if check_password_hash(user_data['password'], password):
-                user_obj = User(user_data)
-                login_user(user_obj)
-                return redirect(url_for('index'))
-            else:
+            if not check_password_hash(user_data['password'], password):
                 flash('Invalid password for existing user.')
-        else:
-            # 2. New User: Auto-register as 'customer'
-            new_user_data = {
-                "username": username,
-                "password": generate_password_hash(password),
-                "role": "customer"
-            }
-            result = db.users.insert_one(new_user_data)
-            
-            # Log in the newly created user immediately
-            new_user_data['_id'] = result.inserted_id
-            user_obj = User(new_user_data)
+                return redirect(url_for('login'))
+
+            if user_data.get('role', 'customer') != 'admin' and not user_data.get('is_verified', False):
+                flash('Please verify your account with the code sent to your email.')
+                return redirect(url_for('verify_otp', username=username))
+
+            user_obj = User(user_data)
             login_user(user_obj)
-            
-            flash(f'Welcome! Account created for {username}.')
             return redirect(url_for('index'))
+        else:
+            flash('No account found with that username. Please register first.')
+            return redirect(url_for('register'))
             
     return render_template('login.html')
 @app.route('/logout')
@@ -115,6 +137,7 @@ def make_admin(user_id):
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
         
         # Prevent duplicate usernames
@@ -122,16 +145,74 @@ def register():
             flash('Username already exists!')
             return redirect(url_for('register'))
         
-        # Save as a customer by default
+        otp_code = generate_otp_code()
+        expires_at = datetime.utcnow() + timedelta(minutes=10)
+
         db.users.insert_one({
             "username": username,
+            "email": email,
             "password": generate_password_hash(password),
-            "role": "customer"
+            "role": "customer",
+            "is_verified": False,
+            "otp_code": otp_code,
+            "otp_expires_at": expires_at
         })
-        flash('Success! Please log in.')
-        return redirect(url_for('login'))
+
+        send_otp_email(email, otp_code)
+        flash('We have sent a verification code to your email. Enter it to activate your account.')
+        return redirect(url_for('verify_otp', username=username))
         
     return render_template('register.html')
+
+
+@app.route('/verify-otp', methods=['GET', 'POST'])
+def verify_otp():
+    username = request.args.get('username') or request.form.get('username')
+
+    if request.method == 'POST':
+        otp_input = request.form.get('otp')
+        username = request.form.get('username')
+
+        user_data = db.users.find_one({"username": username})
+        if not user_data:
+            flash('User not found. Please register again.')
+            return redirect(url_for('register'))
+
+        if user_data.get('is_verified', False):
+            flash('Account already verified. You can log in.')
+            return redirect(url_for('login'))
+
+        stored_code = user_data.get('otp_code')
+        expires_at = user_data.get('otp_expires_at')
+
+        if not stored_code or not expires_at or expires_at < datetime.utcnow():
+            new_code = generate_otp_code()
+            new_expires = datetime.utcnow() + timedelta(minutes=10)
+            db.users.update_one(
+                {"_id": user_data['_id']},
+                {"$set": {"otp_code": new_code, "otp_expires_at": new_expires}}
+            )
+            send_otp_email(user_data.get('email'), new_code)
+            flash('Your verification code expired. We have sent a new one to your email.')
+            return redirect(url_for('verify_otp', username=username))
+
+        if otp_input == stored_code:
+            db.users.update_one(
+                {"_id": user_data['_id']},
+                {
+                    "$set": {"is_verified": True},
+                    "$unset": {"otp_code": "", "otp_expires_at": ""}
+                }
+            )
+            user_obj = User(user_data)
+            login_user(user_obj)
+            flash('Your account has been verified. Welcome to GreenFields Farm Shop!')
+            return redirect(url_for('index'))
+
+        flash('Invalid verification code. Please try again.')
+        return redirect(url_for('verify_otp', username=username))
+
+    return render_template('verify_otp.html', username=username)
 
 @app.route('/admin/edit/<id>', methods=['POST'])
 @login_required
