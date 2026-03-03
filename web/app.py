@@ -179,5 +179,39 @@ def add_to_cart(product_id):
         flash('Item added to cart!')
     return redirect(url_for('index'))
 
+@app.route('/cart')
+@login_required
+def view_cart():
+    # Only customers should access this view
+    if current_user.role != 'customer':
+        flash("Admins manage inventory; customers manage carts!")
+        return redirect(url_for('admin_dashboard'))
+
+    # Fetch the user's document to get the list of product IDs in their cart
+    user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
+    cart_ids = user_data.get('cart', [])
+    
+    # Fetch full product details for each ID in the cart
+    cart_items = []
+    total_price = 0
+    for pid in cart_ids:
+        product = db.catalog.find_one({"_id": pid})
+        if product:
+            cart_items.append(product)
+            total_price += product.get('price', 0)
+            
+    return render_template('cart.html', items=cart_items, total=total_price)
+
+@app.route('/remove_from_cart/<product_id>')
+@login_required
+def remove_from_cart(product_id):
+    # Use $pull to remove one instance of the product ID from the cart array
+    db.users.update_one(
+        {"_id": ObjectId(current_user.id)},
+        {"$pull": {"cart": ObjectId(product_id)}}
+    )
+    flash('Item removed from cart.')
+    return redirect(url_for('view_cart'))
+
 if __name__ == '__main__':
     app.run(debug=True)
