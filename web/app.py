@@ -60,6 +60,24 @@ def _get_smtp_config():
     }
 
 
+def mask_email(email: str) -> str:
+    """
+    Return a privacy-friendly version of the email, e.g.
+    'jo****@gmail.com' or 'a****@domain.com'.
+    """
+    if not email:
+        return ""
+    email = email.strip()
+    if "@" not in email:
+        return email
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        masked_local = local[0] + "****"
+    else:
+        masked_local = local[:2] + "****"
+    return f"{masked_local}@{domain}"
+
+
 def send_otp_email(to_email: str, otp_code: str) -> bool:
     """
     Send OTP via email using SMTP credentials from .env.
@@ -130,8 +148,24 @@ def login():
                 flash('Invalid password for existing user.')
                 return redirect(url_for('login'))
 
+            # For customers who haven't verified yet, always send a fresh OTP email on login
             if user_data.get('role', 'customer') != 'admin' and not user_data.get('is_verified', False):
-                flash('Please verify your account with the code sent to your email.')
+                email = (user_data.get('email') or '').strip().lower()
+                if not email:
+                    flash('No email address is associated with this account. Please register again.')
+                    return redirect(url_for('register'))
+
+                otp_code = generate_otp_code()
+                expires_at = datetime.utcnow() + timedelta(minutes=10)
+                db.users.update_one(
+                    {"_id": user_data['_id']},
+                    {"$set": {"otp_code": otp_code, "otp_expires_at": expires_at}}
+                )
+                if send_otp_email(email, otp_code):
+                    masked = mask_email(email)
+                    flash(f'We have emailed a verification code to {masked}. Enter it to activate your account.')
+                else:
+                    flash('We could not send the verification email. Please try again later or contact support.')
                 return redirect(url_for('verify_otp', username=username))
 
             user_obj = User(user_data)
@@ -265,7 +299,14 @@ def verify_otp():
         flash('Invalid verification code. Please try again.')
         return redirect(url_for('verify_otp', username=username))
 
-    return render_template('verify_otp.html', username=username)
+    # GET: show the verify form and display which email we're sending codes to
+    email_mask = ""
+    if username:
+        user_data = db.users.find_one({"username": username})
+        if user_data and user_data.get('email'):
+            email_mask = mask_email(user_data['email'])
+
+    return render_template('verify_otp.html', username=username, email_mask=email_mask)
 
 @app.route('/admin/edit/<id>', methods=['POST'])
 @login_required
