@@ -11,8 +11,9 @@ from dotenv import load_dotenv
 import pymongo
 from bson.objectid import ObjectId
 
-# Load .env and Initialize Flask
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+# Load .env from project root (parent of web/) so SMTP and MONGO_URL are always found
+_env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+load_dotenv(_env_path)
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here" # Required for sessions
 
@@ -42,27 +43,66 @@ def generate_otp_code() -> str:
     return f"{random.randint(100000, 999999)}"
 
 
-def send_otp_email(to_email: str, otp_code: str) -> None:
-    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-    sender_email = os.getenv("EMAIL_SENDER") or smtp_user
+def _get_smtp_config():
+    """Load and normalize SMTP config from environment. Strips whitespace and optional quotes."""
+    def _s(v):
+        if v is None:
+            return None
+        s = str(v).strip().strip('"').strip("'")
+        return s if s else None
 
-    if not (smtp_user and smtp_password and to_email and sender_email):
-        app.logger.info(f"OTP for {to_email}: {otp_code}")
-        return
+    return {
+        "host": _s(os.getenv("SMTP_HOST")) or "smtp.gmail.com",
+        "port": int(_s(os.getenv("SMTP_PORT")) or "587"),
+        "user": _s(os.getenv("SMTP_USER")),
+        "password": _s(os.getenv("SMTP_PASSWORD")),
+        "sender": _s(os.getenv("EMAIL_SENDER")) or _s(os.getenv("SMTP_USER")),
+    }
+
+
+def send_otp_email(to_email: str, otp_code: str) -> bool:
+    """
+    Send OTP via email using SMTP credentials from .env.
+    Returns True if the email was sent successfully, False otherwise.
+    In production, set SMTP_USER and SMTP_PASSWORD (and optionally EMAIL_SENDER) in .env.
+    """
+    if not to_email:
+        return False
+
+    to_email = to_email.strip().lower()
+    cfg = _get_smtp_config()
+
+    if not cfg["user"] or not cfg["password"]:
+        app.logger.warning(
+            "SMTP not configured: set SMTP_USER and SMTP_PASSWORD in .env. "
+            f"SMTP_USER set: {bool(cfg['user'])}, SMTP_PASSWORD set: {bool(cfg['password'])}, "
+            f".env path: {_env_path}. OTP for {to_email}: {otp_code}"
+        )
+        return False
 
     body = f"Your GreenFields Farm Shop verification code is {otp_code}. It will expire in 10 minutes."
     msg = MIMEText(body)
     msg["Subject"] = "Your GreenFields verification code"
-    msg["From"] = sender_email
+    msg["From"] = cfg["sender"] or cfg["user"]
     msg["To"] = to_email
 
-    with smtplib.SMTP(smtp_host, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(msg)
+    try:
+        with smtplib.SMTP(cfg["host"], cfg["port"], timeout=15) as server:
+            server.starttls()
+            server.login(cfg["user"], cfg["password"])
+            server.send_message(msg)
+        app.logger.info(f"OTP email sent to {to_email}")
+        return True
+    except smtplib.SMTPAuthenticationError as e:
+        app.logger.error(f"SMTP login failed: {e}. Check SMTP_USER and SMTP_PASSWORD (use App Password for Gmail).")
+        return False
+    except smtplib.SMTPException as e:
+        app.logger.error(f"SMTP error sending to {to_email}: {e}")
+        return False
+    except Exception as e:
+        app.logger.exception(f"Failed to send OTP email to {to_email}: {e}")
+        return False
+
 
 # --- PUBLIC ROUTES ---
 @app.route('/')
@@ -144,9 +184,22 @@ def register():
         if db.users.find_one({"username": username}):
             flash('Username already exists!')
             return redirect(url_for('register'))
-        
+
+        if not email:
+            flash('Please enter your email address for OTP verification.')
+            return redirect(url_for('register'))
+
+        email = email.strip().lower()
         otp_code = generate_otp_code()
         expires_at = datetime.utcnow() + timedelta(minutes=10)
+
+        sent = send_otp_email(email, otp_code)
+        if not sent:
+            flash(
+                'We could not send the verification email. Please check your email address and try again, '
+                'or contact support if the problem continues.'
+            )
+            return redirect(url_for('register'))
 
         db.users.insert_one({
             "username": username,
@@ -157,8 +210,6 @@ def register():
             "otp_code": otp_code,
             "otp_expires_at": expires_at
         })
-
-        send_otp_email(email, otp_code)
         flash('We have sent a verification code to your email. Enter it to activate your account.')
         return redirect(url_for('verify_otp', username=username))
         
@@ -192,8 +243,10 @@ def verify_otp():
                 {"_id": user_data['_id']},
                 {"$set": {"otp_code": new_code, "otp_expires_at": new_expires}}
             )
-            send_otp_email(user_data.get('email'), new_code)
-            flash('Your verification code expired. We have sent a new one to your email.')
+            if send_otp_email(user_data.get('email') or '', new_code):
+                flash('Your verification code expired. We have sent a new one to your email.')
+            else:
+                flash('We could not send the new code. Please check your email or try again later.')
             return redirect(url_for('verify_otp', username=username))
 
         if otp_input == stored_code:
