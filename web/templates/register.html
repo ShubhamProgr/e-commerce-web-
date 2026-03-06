@@ -111,6 +111,7 @@
         {% endwith %}
 
         <form method="POST" action="/register">
+            <input type="hidden" name="next" value="{{ request.args.get('next') or '' }}">
             <div class="mb-3">
                 <label class="form-label small fw-bold text-secondary text-uppercase">Username</label>
                 <input type="text" name="username" class="form-control" placeholder="Choose a unique name" required autofocus>

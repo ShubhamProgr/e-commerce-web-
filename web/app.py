@@ -4,7 +4,7 @@ import random
 import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -176,6 +176,13 @@ def login():
     # determine where to send the user after they'll eventually log in
     post_login_redirect = _get_post_login_redirect()
 
+    # if user is merely viewing the form (GET) and we have a "next" hint,
+    # show a contextual message so they understand where they'll end up.
+    if request.method == 'GET':
+        next_hint = request.args.get('next', '')
+        if next_hint.startswith('/cart') or next_hint.startswith('/checkout'):
+            flash('You need to sign in before accessing your cart.')
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -203,9 +210,9 @@ def login():
                 )
                 if send_otp_email(email, otp_code):
                     masked = mask_email(email)
-                    flash(f'We have emailed a verification code to {masked}. Enter it to activate your account.')
+                    flash(f'We have emailed a verification code to {masked}. Enter it to activate your account.', 'success')
                 else:
-                    flash('We could not send the verification email. Please try again later or contact support.')
+                    flash('We could not send the verification email. Please try again later or contact support.', 'error')
                 # propagate the redirect target through the verification step
                 return redirect(url_for('verify_otp', username=username, next=post_login_redirect))
 
@@ -251,6 +258,9 @@ def make_admin(user_id):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    # preserve next parameter so we can send the user back after verifying
+    next_url = request.args.get('next') or request.form.get('next')
+
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
@@ -273,11 +283,11 @@ def register():
         if not sent:
             flash(
                 'We could not send the verification email. Please check your email address and try again, '
-                'or contact support if the problem continues.'
+                'or contact support if the problem continues.', 'error'
             )
             return redirect(url_for('register'))
 
-        db.users.insert_one({
+        data = {
             "username": username,
             "email": email,
             "password": generate_password_hash(password),
@@ -285,9 +295,13 @@ def register():
             "is_verified": False,
             "otp_code": otp_code,
             "otp_expires_at": expires_at
-        })
-        flash('We have sent a verification code to your email. Enter it to activate your account.')
-        return redirect(url_for('verify_otp', username=username))
+        }
+        db.users.insert_one(data)
+        flash('We have sent a verification code to your email. Enter it to activate your account.', 'success')
+        args = {"username": username}
+        if next_url:
+            args["next"] = next_url
+        return redirect(url_for('verify_otp', **args))
         
     return render_template('register.html')
 
@@ -303,11 +317,11 @@ def verify_otp():
 
         user_data = db.users.find_one({"username": username})
         if not user_data:
-            flash('User not found. Please register again.')
+            flash('User not found. Please register again.', 'error')
             return redirect(url_for('register'))
 
         if user_data.get('is_verified', False):
-            flash('Account already verified. You can log in.')
+            flash('Account already verified. You can log in.', 'info')
             return redirect(url_for('login'))
 
         stored_code = user_data.get('otp_code')
@@ -321,10 +335,13 @@ def verify_otp():
                 {"$set": {"otp_code": new_code, "otp_expires_at": new_expires}}
             )
             if send_otp_email(user_data.get('email') or '', new_code):
-                flash('Your verification code expired. We have sent a new one to your email.')
+                flash('Your verification code expired. We have sent a new one to your email.', 'success')
             else:
-                flash('We could not send the new code. Please check your email or try again later.')
-            return redirect(url_for('verify_otp', username=username))
+                flash('We could not send the new code. Please check your email or try again later.', 'error')
+            args = {"username": username}
+            if post_login_redirect:
+                args["next"] = post_login_redirect
+            return redirect(url_for('verify_otp', **args))
 
         if otp_input == stored_code:
             db.users.update_one(
@@ -337,11 +354,14 @@ def verify_otp():
             user_obj = User(user_data)
             login_user(user_obj)
             _merge_guest_cart_into_user(user_data['_id'])
-            flash('Your account has been verified. Welcome to GreenFields Farm Shop!')
+            flash('Your account has been verified. Welcome to GreenFields Farm Shop!', 'success')
             return redirect(post_login_redirect)
 
-        flash('Invalid verification code. Please try again.')
-        return redirect(url_for('verify_otp', username=username))
+        flash('Invalid verification code. Please try again.', 'error')
+        args = {"username": username}
+        if post_login_redirect:
+            args["next"] = post_login_redirect
+        return redirect(url_for('verify_otp', **args))
 
     # GET: show the verify form and display which email we're sending codes to
     email_mask = ""
@@ -363,10 +383,8 @@ def edit_product(id):
             {"$set": {"price": new_price, "stock": new_stock}}
         )
         flash('Product updated successfully')
-    # Redirect back to the main dashboard instead of manage_inventory
     return redirect(url_for('admin_dashboard'))
 
-# 3. ENSURE the add function also redirects to the dashboard
 @app.route('/admin/add-product', methods=['POST'])
 @login_required
 def add_product():
@@ -389,74 +407,174 @@ def add_product():
 # --- CUSTOMER ROUTES ---
 @app.route('/add_to_cart/<product_id>')
 def add_to_cart(product_id):
-    if current_user.is_authenticated and current_user.role == 'customer':
-        db.users.update_one(
-            {"_id": ObjectId(current_user.id)},
-            {"$push": {"cart": ObjectId(product_id)}}
-        )
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    try:
+        if current_user.is_authenticated and current_user.role == 'customer':
+            db.users.update_one(
+                {"_id": ObjectId(current_user.id)},
+                {"$push": {"cart": ObjectId(product_id)}}
+            )
+        elif current_user.is_authenticated and current_user.role != 'customer':
+            if is_ajax:
+                return jsonify({'error': 'Admins cannot add to cart'}), 403
+            flash("Admins manage inventory; customers manage carts!")
+            return redirect(url_for('index'))
+        else:
+            guest_cart = _get_guest_cart()
+            guest_cart.append(product_id)
+            _save_guest_cart(guest_cart)
+        
+        if is_ajax:
+            return jsonify({'success': True}), 200
         flash('Item added to cart!')
-    elif current_user.is_authenticated and current_user.role != 'customer':
-        flash("Admins manage inventory; customers manage carts!")
-    else:
-        guest_cart = _get_guest_cart()
-        guest_cart.append(product_id)
-        _save_guest_cart(guest_cart)
-        flash('Item added to cart!')
-    return redirect(url_for('index'))
+        return redirect(url_for('index'))
+    except Exception as e:
+        app.logger.error(f"Error adding to cart: {e}")
+        if is_ajax:
+            return jsonify({'error': str(e)}), 500
+        return redirect(url_for('index'))
 
 @app.route('/cart')
 def view_cart():
+    # only customers may view the cart; redirect admins back to the dashboard
     if current_user.is_authenticated and current_user.role != 'customer':
         flash("Admins manage inventory; customers manage carts!")
         return redirect(url_for('admin_dashboard'))
 
+    # load raw id list from either user record or session
     if current_user.is_authenticated and current_user.role == 'customer':
         user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
         cart_ids = user_data.get('cart', [])
     else:
         cart_ids = _get_guest_cart()
 
-    cart_items = []
-    total_price = 0
+    # aggregate quantities so UI can display +1, +2, etc.
+    cart_map: dict = {}
     for pid in cart_ids:
         try:
-            product_object_id = pid if isinstance(pid, ObjectId) else ObjectId(pid)
+            oid = pid if isinstance(pid, ObjectId) else ObjectId(pid)
         except Exception:
             continue
+        prod = db.catalog.find_one({"_id": oid})
+        if not prod:
+            continue
+        key = str(oid)
+        entry = cart_map.setdefault(key, {"product": prod, "quantity": 0})
+        entry["quantity"] += 1
 
-        product = db.catalog.find_one({"_id": product_object_id})
-        if product:
-            cart_items.append(product)
-            total_price += product.get('price', 0)
+    cart_items = []
+    total_price = 0
+    for entry in cart_map.values():
+        prod = entry["product"]
+        qty = entry["quantity"]
+        cart_items.append({"product": prod, "quantity": qty})
+        total_price += prod.get('price', 0) * qty
 
     return render_template('cart.html', items=cart_items, total=total_price)
 
 @app.route('/remove_from_cart/<product_id>')
 def remove_from_cart(product_id):
-    if current_user.is_authenticated and current_user.role == 'customer':
-        db.users.update_one(
-            {"_id": ObjectId(current_user.id)},
-            {"$pull": {"cart": ObjectId(product_id)}}
-        )
-    elif current_user.is_authenticated and current_user.role != 'customer':
-        flash("Admins manage inventory; customers manage carts!")
-        return redirect(url_for('admin_dashboard'))
-    else:
-        guest_cart = _get_guest_cart()
-        if product_id in guest_cart:
-            guest_cart.remove(product_id)
-            _save_guest_cart(guest_cart)
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    try:
+        # remove all occurrences (delete item completely)
+        if current_user.is_authenticated and current_user.role == 'customer':
+            db.users.update_one(
+                {"_id": ObjectId(current_user.id)},
+                {"$pull": {"cart": ObjectId(product_id)}}
+            )
+        elif current_user.is_authenticated and current_user.role != 'customer':
+            if is_ajax:
+                return jsonify({'error': 'Admins cannot manage carts'}), 403
+            flash("Admins manage inventory; customers manage carts!")
+            return redirect(url_for('admin_dashboard'))
+        else:
+            guest_cart = _get_guest_cart()
+            if product_id in guest_cart:
+                # remove all occurrences of the id
+                guest_cart = [pid for pid in guest_cart if pid != product_id]
+                _save_guest_cart(guest_cart)
+        
+        if is_ajax:
+            return jsonify({'success': True}), 200
+        flash('Item removed from cart.')
+        return redirect(url_for('view_cart'))
+    except Exception as e:
+        app.logger.error(f"Error removing from cart: {e}")
+        if is_ajax:
+            return jsonify({'error': str(e)}), 500
+        return redirect(url_for('view_cart'))
 
-    flash('Item removed from cart.')
-    return redirect(url_for('view_cart'))
+
+@app.route('/cart/increment/<product_id>')
+def increment_cart(product_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    try:
+        if current_user.is_authenticated and current_user.role == 'customer':
+            db.users.update_one(
+                {"_id": ObjectId(current_user.id)},
+                {"$push": {"cart": ObjectId(product_id)}}
+            )
+        elif not current_user.is_authenticated:
+            guest_cart = _get_guest_cart()
+            guest_cart.append(product_id)
+            _save_guest_cart(guest_cart)
+        
+        if is_ajax:
+            return jsonify({'success': True}), 200
+        return redirect(url_for('view_cart'))
+    except Exception as e:
+        app.logger.error(f"Error incrementing cart: {e}")
+        if is_ajax:
+            return jsonify({'error': str(e)}), 500
+        return redirect(url_for('view_cart'))
+
+
+@app.route('/cart/decrement/<product_id>')
+def decrement_cart(product_id):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    try:
+        if current_user.is_authenticated and current_user.role == 'customer':
+            user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
+            cart_list = user_data.get('cart', [])
+            # remove first matching occurrence
+            for idx, val in enumerate(cart_list):
+                if (isinstance(val, ObjectId) and str(val) == product_id) or (str(val) == product_id):
+                    cart_list.pop(idx)
+                    break
+            db.users.update_one({"_id": ObjectId(current_user.id)}, {"$set": {"cart": cart_list}})
+        elif not current_user.is_authenticated:
+            guest_cart = _get_guest_cart()
+            if product_id in guest_cart:
+                guest_cart.remove(product_id)
+                _save_guest_cart(guest_cart)
+        
+        if is_ajax:
+            return jsonify({'success': True}), 200
+        return redirect(url_for('view_cart'))
+    except Exception as e:
+        app.logger.error(f"Error decrementing cart: {e}")
+        if is_ajax:
+            return jsonify({'error': str(e)}), 500
+        return redirect(url_for('view_cart'))
 
 
 @app.route('/checkout')
-@login_required
 def checkout():
+    # if anonymous, send to login/register with message
+    if not current_user.is_authenticated:
+        flash('Please log in or register before proceeding to payment.')
+        return redirect(url_for('login', next=url_for('checkout')))
+
     if current_user.role != 'customer':
         flash("Admins manage inventory; customers manage carts!")
         return redirect(url_for('admin_dashboard'))
+
+    # at this point customer is logged in -- normally you'd show a payment page
+    # for now just confirm and keep them on cart (could render a checkout template)
     flash('Login verified. Continue to payment.')
     return redirect(url_for('view_cart'))
 

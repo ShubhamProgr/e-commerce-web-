@@ -86,44 +86,93 @@
         .back-link:hover {
             color: var(--brand-green-dark);
         }
+        
+        .alert-otp-sent {
+            background-color: #ecfdf3;
+            border: 1px solid rgba(26, 135, 84, 0.2);
+            color: var(--brand-green-dark);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .alert-otp-error {
+            background-color: #fee2e2;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #b91c1c;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .email-highlight {
+            font-weight: 700;
+            color: var(--brand-green);
+        }
+        
+        .otp-input-section {
+            margin-top: 24px;
+        }
+        
+        .form-control-otp {
+            font-size: 1.2rem !important;
+            letter-spacing: 0.3em;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="otp-card">
-        <div class="text-center mb-3">
-            <div class="farm-logo-circle">🌾</div>
-            <div class="otp-title">Verify your account</div>
+        <div class="text-center mb-4">
+            <div class="farm-logo-circle">✓</div>
+            <div class="otp-title">Verification code sent!</div>
             <p class="otp-subtitle">
-                Enter the 6-digit code we emailed you to activate your GreenFields account.
+                A 6-digit code has been sent to your email.
                 {% if email_mask %}
-                    <br><span class="fw-semibold">Sending to: {{ email_mask }}</span>
+                    <br><span class="email-highlight">{{ email_mask }}</span>
                 {% endif %}
             </p>
         </div>
 
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-danger py-2 small border-0 rounded-3 text-center mb-3">{{ message }}</div>
+            {% for category, message in messages %}
+              {% if category == 'error' %}
+                <div class="alert-otp-error">
+                  {{ message }}
+                </div>
+              {% else %}
+                <div class="alert-otp-sent">
+                  {{ message }}
+                </div>
+              {% endif %}
             {% endfor %}
           {% endif %}
         {% endwith %}
 
         <form method="POST" action="/verify-otp">
             <input type="hidden" name="username" value="{{ username }}">
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-secondary text-uppercase d-block text-center">Verification code</label>
-                <input type="text" name="otp" maxlength="6" pattern="\d{6}" class="form-control" placeholder="• • • • • •" required>
+            <input type="hidden" name="next" value="{{ next_url or '' }}">
+            
+            <div class="otp-input-section">
+                <label class="form-label small fw-bold text-secondary text-uppercase d-block text-center mb-2">Enter 6-digit code</label>
+                <input type="text" name="otp" maxlength="6" pattern="\d{6}" class="form-control form-control-otp" placeholder="000000" inputmode="numeric" autocomplete="one-time-code" required autofocus>
             </div>
-            <div class="d-grid">
+            
+            <div class="d-grid mt-4">
                 <button type="submit" class="btn-verify">Verify & Continue</button>
             </div>
         </form>
 
-        <div class="text-center mt-3">
-            <a href="/register" class="text-decoration-none small back-link">← Change email / start over</a>
+        <div class="text-center mt-4 pt-3 border-top">
+            <p class="small text-muted mb-2">Didn't receive the code?</p>
+            <a href="/register" class="text-decoration-none small back-link">← Try registering again or use a different email</a>
         </div>
     </div>
 </div>
