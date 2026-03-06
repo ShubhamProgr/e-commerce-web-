@@ -4,8 +4,7 @@ from pymongo import MongoClient
 from werkzeug.security import generate_password_hash
 from dotenv import load_dotenv
 
-# Load connection string from your global .env
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 uri = os.getenv("MONGO_URL")
 
 # Connect to your Atlas cluster
