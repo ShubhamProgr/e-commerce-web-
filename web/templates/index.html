@@ -1,12 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenFields Farm Shop</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
+{% extends "base.html" %}
+
+{% block title %}GreenFields Farm Shop{% endblock %}
+
+{% block content %}
+<style>
         :root {
             --brand-green: #1b7a40;
             --brand-green-dark: #14532d;
@@ -368,7 +365,8 @@
                 <div class="card h-100 p-2">
                     <div class="image-box">
                         <span class="delivery-tag">FRESH HARVEST</span>
-                        <img src="https://placehold.co/300x300/fef9c3/166534?text={{ product.item|replace(' ', '+') }}" 
+                       
+                        <img src="{{ product.image }}" 
                              alt="{{ product.item }}">
                     </div>
                     <div class="card-body p-1">
@@ -488,5 +486,5 @@
             });
         });
     </script>
-</body>
-</html>
+</style>
+{% endblock %}

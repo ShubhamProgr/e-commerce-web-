@@ -76,6 +76,7 @@ def _get_post_login_redirect():
         return next_url
     return url_for('index')
 
+
 def generate_otp_code() -> str:
     return f"{random.randint(100000, 999999)}"
 
@@ -159,6 +160,24 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
         return False
 
 
+# --- SESSION HELPERS ---
+@app.before_request
+def _clear_guest_cart_on_new_session():
+    """Ensure guest cart does not persist across distinct browser sessions.
+
+    Flask sets `session.new` to True when no valid session cookie is sent by the
+    client, which happens when the user opens a fresh browser session or the
+    cookie has expired/been cleared.  When that occurs we remove any existing
+    ``guest_cart`` data so anonymous visitors always start with an empty cart
+    unless they actively add items during that session.
+    """
+    # only act for anonymous users; authenticated carts are stored on the user
+    if not current_user.is_authenticated:
+        if session.new and 'guest_cart' in session:
+            session.pop('guest_cart', None)
+            session.modified = True
+
+
 # --- PUBLIC ROUTES ---
 @app.route('/')
 def index():
@@ -222,6 +241,9 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    # remove any guest cart that might be lingering in the session; after a
+    # logout we want a truly fresh anonymous shopping experience.
+    session.pop('guest_cart', None)
     logout_user()
     return redirect(url_for('index'))
 
