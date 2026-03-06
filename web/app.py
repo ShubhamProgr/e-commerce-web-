@@ -4,7 +4,7 @@ import random
 import smtplib
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -38,6 +38,43 @@ def load_user(user_id):
     user_data = db.users.find_one({"_id": ObjectId(user_id)})
     return User(user_data) if user_data else None
 
+
+def _get_guest_cart():
+    return session.get('guest_cart', [])
+
+
+def _save_guest_cart(cart_ids):
+    session['guest_cart'] = cart_ids
+    session.modified = True
+
+
+def _merge_guest_cart_into_user(user_id):
+    guest_cart_ids = _get_guest_cart()
+    if not guest_cart_ids:
+        return
+
+    object_ids = []
+    for pid in guest_cart_ids:
+        try:
+            object_ids.append(ObjectId(pid))
+        except Exception:
+            continue
+
+    if object_ids:
+        db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$push": {"cart": {"$each": object_ids}}}
+        )
+
+    session.pop('guest_cart', None)
+    session.modified = True
+
+
+def _get_post_login_redirect():
+    next_url = request.args.get('next') or request.form.get('next')
+    if next_url and next_url.startswith('/'):
+        return next_url
+    return url_for('index')
 
 def generate_otp_code() -> str:
     return f"{random.randint(100000, 999999)}"
@@ -136,6 +173,9 @@ def product_detail(id):
 # --- AUTH ROUTES ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # determine where to send the user after they'll eventually log in
+    post_login_redirect = _get_post_login_redirect()
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -166,11 +206,13 @@ def login():
                     flash(f'We have emailed a verification code to {masked}. Enter it to activate your account.')
                 else:
                     flash('We could not send the verification email. Please try again later or contact support.')
-                return redirect(url_for('verify_otp', username=username))
+                # propagate the redirect target through the verification step
+                return redirect(url_for('verify_otp', username=username, next=post_login_redirect))
 
             user_obj = User(user_data)
             login_user(user_obj)
-            return redirect(url_for('index'))
+            _merge_guest_cart_into_user(user_data['_id'])
+            return redirect(post_login_redirect)
         else:
             flash('No account found with that username. Please register first.')
             return redirect(url_for('register'))
@@ -253,6 +295,7 @@ def register():
 @app.route('/verify-otp', methods=['GET', 'POST'])
 def verify_otp():
     username = request.args.get('username') or request.form.get('username')
+    post_login_redirect = _get_post_login_redirect()
 
     if request.method == 'POST':
         otp_input = request.form.get('otp')
@@ -293,8 +336,9 @@ def verify_otp():
             )
             user_obj = User(user_data)
             login_user(user_obj)
+            _merge_guest_cart_into_user(user_data['_id'])
             flash('Your account has been verified. Welcome to GreenFields Farm Shop!')
-            return redirect(url_for('index'))
+            return redirect(post_login_redirect)
 
         flash('Invalid verification code. Please try again.')
         return redirect(url_for('verify_otp', username=username))
@@ -306,7 +350,7 @@ def verify_otp():
         if user_data and user_data.get('email'):
             email_mask = mask_email(user_data['email'])
 
-    return render_template('verify_otp.html', username=username, email_mask=email_mask)
+    return render_template('verify_otp.html', username=username, email_mask=email_mask, next_url=post_login_redirect)
 
 @app.route('/admin/edit/<id>', methods=['POST'])
 @login_required
@@ -344,49 +388,81 @@ def add_product():
 
 # --- CUSTOMER ROUTES ---
 @app.route('/add_to_cart/<product_id>')
-@login_required
 def add_to_cart(product_id):
-    if current_user.role == 'customer':
+    if current_user.is_authenticated and current_user.role == 'customer':
         db.users.update_one(
             {"_id": ObjectId(current_user.id)},
             {"$push": {"cart": ObjectId(product_id)}}
         )
         flash('Item added to cart!')
+    elif current_user.is_authenticated and current_user.role != 'customer':
+        flash("Admins manage inventory; customers manage carts!")
+    else:
+        guest_cart = _get_guest_cart()
+        guest_cart.append(product_id)
+        _save_guest_cart(guest_cart)
+        flash('Item added to cart!')
     return redirect(url_for('index'))
 
 @app.route('/cart')
-@login_required
 def view_cart():
-    # Only customers should access this view
-    if current_user.role != 'customer':
+    if current_user.is_authenticated and current_user.role != 'customer':
         flash("Admins manage inventory; customers manage carts!")
         return redirect(url_for('admin_dashboard'))
 
-    # Fetch the user's document to get the list of product IDs in their cart
-    user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
-    cart_ids = user_data.get('cart', [])
-    
-    # Fetch full product details for each ID in the cart
+    if current_user.is_authenticated and current_user.role == 'customer':
+        user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
+        cart_ids = user_data.get('cart', [])
+    else:
+        cart_ids = _get_guest_cart()
+
     cart_items = []
     total_price = 0
     for pid in cart_ids:
-        product = db.catalog.find_one({"_id": pid})
+        try:
+            product_object_id = pid if isinstance(pid, ObjectId) else ObjectId(pid)
+        except Exception:
+            continue
+
+        product = db.catalog.find_one({"_id": product_object_id})
         if product:
             cart_items.append(product)
             total_price += product.get('price', 0)
-            
+
     return render_template('cart.html', items=cart_items, total=total_price)
 
 @app.route('/remove_from_cart/<product_id>')
-@login_required
 def remove_from_cart(product_id):
-    # Use $pull to remove one instance of the product ID from the cart array
-    db.users.update_one(
-        {"_id": ObjectId(current_user.id)},
-        {"$pull": {"cart": ObjectId(product_id)}}
-    )
+    if current_user.is_authenticated and current_user.role == 'customer':
+        db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$pull": {"cart": ObjectId(product_id)}}
+        )
+    elif current_user.is_authenticated and current_user.role != 'customer':
+        flash("Admins manage inventory; customers manage carts!")
+        return redirect(url_for('admin_dashboard'))
+    else:
+        guest_cart = _get_guest_cart()
+        if product_id in guest_cart:
+            guest_cart.remove(product_id)
+            _save_guest_cart(guest_cart)
+
     flash('Item removed from cart.')
     return redirect(url_for('view_cart'))
 
-if __name__ == '__main__':
+
+@app.route('/checkout')
+@login_required
+def checkout():
+    if current_user.role != 'customer':
+        flash("Admins manage inventory; customers manage carts!")
+        return redirect(url_for('admin_dashboard'))
+    flash('Login verified. Continue to payment.')
+    return redirect(url_for('view_cart'))
+
+
+if __name__ == '__main__':         
     app.run(debug=True)
+
+
+
