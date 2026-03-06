@@ -310,7 +310,9 @@ def register():
             "role": "customer",
             "is_verified": False,
             "otp_code": otp_code,
-            "otp_expires_at": expires_at
+            "otp_expires_at": expires_at,
+            "cart": [],  # Initialize empty cart
+            "orders": []  # Initialize empty order history
         }
         db.users.insert_one(data)
         flash('We have sent a verification code to your email. Enter it to activate your account.', 'success')
@@ -614,6 +616,119 @@ def checkout():
     # for now just confirm and keep them on cart (could render a checkout template)
     flash('Login verified. Continue to payment.')
     return redirect(url_for('view_cart'))
+
+
+@app.route('/complete-order', methods=['POST'])
+@login_required
+def complete_order():
+    """
+    Complete the current cart order and save it to the user's order history.
+    Clears the cart after order is placed.
+    """
+    if current_user.role != 'customer':
+        flash("Only customers can place orders!", 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    try:
+        # Get user data and cart
+        user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
+        cart_ids = user_data.get('cart', [])
+        
+        if not cart_ids:
+            flash('Your cart is empty. Please add items before placing an order.', 'warning')
+            return redirect(url_for('view_cart'))
+        
+        # Build order items with product details
+        order_items = []
+        total_amount = 0
+        
+        cart_map = {}
+        for pid in cart_ids:
+            try:
+                oid = pid if isinstance(pid, ObjectId) else ObjectId(pid)
+            except Exception:
+                continue
+            
+            prod = db.catalog.find_one({"_id": oid})
+            if not prod:
+                continue
+            
+            key = str(oid)
+            if key not in cart_map:
+                cart_map[key] = {"product": prod, "quantity": 0}
+            cart_map[key]["quantity"] += 1
+        
+        # Create order items with price snapshot
+        for item in cart_map.values():
+            prod = item["product"]
+            qty = item["quantity"]
+            item_total = prod.get('price', 0) * qty
+            
+            order_items.append({
+                "product_id": str(prod['_id']),
+                "product_name": prod.get('item', ''),
+                "brand": prod.get('brand', ''),
+                "quantity": qty,
+                "price_per_unit": prod.get('price', 0),
+                "item_total": item_total
+            })
+            
+            total_amount += item_total
+        
+        # Create order object
+        order = {
+            "_id": ObjectId(),  # Unique order ID
+            "order_date": datetime.utcnow(),
+            "items": order_items,
+            "total_amount": total_amount,
+            "status": "completed",  # Could be extended to 'shipped', 'delivered', etc.
+            "username": user_data.get('username'),
+            "email": user_data.get('email')
+        }
+        
+        # Save order to user's orders array
+        db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {
+                "$push": {"orders": order},
+                "$set": {"cart": []}  # Clear the cart
+            }
+        )
+        
+        flash(f'Order placed successfully! Order ID: {str(order["_id"])}', 'success')
+        return redirect(url_for('order_history'))
+    
+    except Exception as e:
+        app.logger.error(f"Error completing order: {e}")
+        flash(f'An error occurred while placing the order: {str(e)}', 'error')
+        return redirect(url_for('view_cart'))
+
+
+@app.route('/orders')
+@login_required
+def order_history():
+    """
+    Display all orders for the current authenticated customer.
+    """
+    if current_user.role != 'customer':
+        flash("Only customers can view order history!", 'error')
+        if current_user.role == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('index'))
+    
+    try:
+        user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
+        orders = user_data.get('orders', [])
+        
+        # Sort orders by date (newest first)
+        orders = sorted(orders, key=lambda x: x.get('order_date', datetime.min), reverse=True)
+        
+        return render_template('order_history.html', orders=orders)
+    
+    except Exception as e:
+        app.logger.error(f"Error retrieving order history: {e}")
+        flash('An error occurred while retrieving your order history.', 'error')
+        return redirect(url_for('view_cart'))
 
 
 if __name__ == '__main__':         

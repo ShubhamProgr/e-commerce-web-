@@ -311,15 +311,6 @@
                     <span class="farm-tag">Toor, moong & chana dal</span>
                     <span class="farm-tag">Barley, millets & oats</span>
                 </div>
-                <div class="farm-auth-buttons d-flex gap-2 mt-1">
-                    {% if current_user.is_authenticated %}
-                        <span class="small text-muted d-none d-md-inline">Hi, {{ current_user.username }}</span>
-                        <a href="/logout" class="btn btn-sm btn-farm-outline">Logout</a>
-                    {% else %}
-                        <a href="/login" class="btn btn-sm btn-farm-outline">Login / Sign Up</a>
-                    {% endif %}
-                    <a href="/cart" class="btn btn-sm btn-farm-solid text-white">🛒 Cart</a>
-                </div>
             </div>
         </header>
 

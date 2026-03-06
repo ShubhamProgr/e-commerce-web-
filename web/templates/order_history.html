@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - GreenFields Farm Shop{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Order History</h1>
+
+    {% if orders %}
+        <div class="row">
+            {% for order in orders %}
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="mb-1">Order #{{ order._id }}</h5>
+                                <small>{{ order.order_date.strftime('%d %B %Y, %I:%M %p') }}</small>
+                            </div>
+                            <div class="text-right">
+                                <span class="badge badge-success">{{ order.status|upper }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-subtitle text-muted mb-3">Order Items:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-center">Qty</th>
+                                        <th class="text-right">Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in order.items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ item.product_name }}</strong>
+                                            {% if item.brand %}
+                                            <br><small class="text-muted">{{ item.brand }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">{{ item.quantity }}</td>
+                                        <td class="text-right">₹{{ "%.2f"|format(item.item_total) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <h6>Total Amount:</h6>
+                            <h6 class="font-weight-bold text-primary">₹{{ "%.2f"|format(order.total_amount) }}</h6>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <small class="text-muted">
+                            Email: {{ order.email }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info" role="alert">
+            <h5>No Orders Yet</h5>
+            <p>You haven't placed any orders yet. Start shopping and place your first order!</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Continue Shopping</a>
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{{ url_for('view_cart') }}" class="btn btn-outline-secondary">Back to Cart</a>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">Continue Shopping</a>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: 1px solid #e0e0e0;
+        transition: box-shadow 0.3s ease;
+    }
+    .card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    }
+    .table-responsive {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
