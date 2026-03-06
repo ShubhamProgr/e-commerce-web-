@@ -195,31 +195,25 @@ def login():
                 flash('Invalid password for existing user.')
                 return redirect(url_for('login'))
 
-            # For customers who haven't verified yet, always send a fresh OTP email on login
-            if user_data.get('role', 'customer') != 'admin' and not user_data.get('is_verified', False):
-                email = (user_data.get('email') or '').strip().lower()
-                if not email:
-                    flash('No email address is associated with this account. Please register again.')
-                    return redirect(url_for('register'))
+            # Always send OTP for sign-in
+            email = (user_data.get('email') or '').strip().lower()
+            if not email:
+                flash('No email address is associated with this account. Please register again.')
+                return redirect(url_for('register'))
 
-                otp_code = generate_otp_code()
-                expires_at = datetime.utcnow() + timedelta(minutes=10)
-                db.users.update_one(
-                    {"_id": user_data['_id']},
-                    {"$set": {"otp_code": otp_code, "otp_expires_at": expires_at}}
-                )
-                if send_otp_email(email, otp_code):
-                    masked = mask_email(email)
-                    flash(f'We have emailed a verification code to {masked}. Enter it to activate your account.', 'success')
-                else:
-                    flash('We could not send the verification email. Please try again later or contact support.', 'error')
-                # propagate the redirect target through the verification step
-                return redirect(url_for('verify_otp', username=username, next=post_login_redirect))
-
-            user_obj = User(user_data)
-            login_user(user_obj)
-            _merge_guest_cart_into_user(user_data['_id'])
-            return redirect(post_login_redirect)
+            otp_code = generate_otp_code()
+            expires_at = datetime.utcnow() + timedelta(minutes=10)
+            db.users.update_one(
+                {"_id": user_data['_id']},
+                {"$set": {"otp_code": otp_code, "otp_expires_at": expires_at}}
+            )
+            if send_otp_email(email, otp_code):
+                masked = mask_email(email)
+                flash(f'We have emailed a verification code to {masked}. Enter it to sign in.', 'success')
+            else:
+                flash('We could not send the verification email. Please try again later or contact support.', 'error')
+            # propagate the redirect target through the verification step
+            return redirect(url_for('verify_otp', username=username, next=post_login_redirect))
         else:
             flash('No account found with that username. Please register first.')
             return redirect(url_for('register'))
@@ -320,10 +314,6 @@ def verify_otp():
             flash('User not found. Please register again.', 'error')
             return redirect(url_for('register'))
 
-        if user_data.get('is_verified', False):
-            flash('Account already verified. You can log in.', 'info')
-            return redirect(url_for('login'))
-
         stored_code = user_data.get('otp_code')
         expires_at = user_data.get('otp_expires_at')
 
@@ -357,11 +347,9 @@ def verify_otp():
             flash('Your account has been verified. Welcome to GreenFields Farm Shop!', 'success')
             return redirect(post_login_redirect)
 
-        flash('Invalid verification code. Please try again.', 'error')
-        args = {"username": username}
-        if post_login_redirect:
-            args["next"] = post_login_redirect
-        return redirect(url_for('verify_otp', **args))
+        flash('Wrong OTP entered. Please try again, resend, or go back to login.', 'error')
+        email_mask = mask_email(user_data.get('email') or '')
+        return render_template('verify_otp.html', username=username, email_mask=email_mask, next_url=post_login_redirect)
 
     # GET: show the verify form and display which email we're sending codes to
     email_mask = ""
@@ -371,6 +359,33 @@ def verify_otp():
             email_mask = mask_email(user_data['email'])
 
     return render_template('verify_otp.html', username=username, email_mask=email_mask, next_url=post_login_redirect)
+
+@app.route('/resend-otp', methods=['POST'])
+def resend_otp():
+    username = request.form.get('username')
+    post_login_redirect = _get_post_login_redirect()
+
+    user_data = db.users.find_one({"username": username})
+    if not user_data:
+        flash('User not found.', 'error')
+        return redirect(url_for('login'))
+
+    email = user_data.get('email')
+    if not email:
+        flash('No email found.', 'error')
+        return redirect(url_for('login'))
+
+    otp_code = generate_otp_code()
+    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    db.users.update_one(
+        {"_id": user_data['_id']},
+        {"$set": {"otp_code": otp_code, "otp_expires_at": expires_at}}
+    )
+    if send_otp_email(email, otp_code):
+        flash('New OTP sent to your email.', 'success')
+    else:
+        flash('Failed to send OTP.', 'error')
+    return redirect(url_for('verify_otp', username=username, next=post_login_redirect))
 
 @app.route('/admin/edit/<id>', methods=['POST'])
 @login_required

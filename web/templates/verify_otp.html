@@ -171,8 +171,13 @@
         </form>
 
         <div class="text-center mt-4 pt-3 border-top">
-            <p class="small text-muted mb-2">Didn't receive the code?</p>
-            <a href="/register" class="text-decoration-none small back-link">← Try registering again or use a different email</a>
+            <p class="small text-muted mb-2">Having trouble?</p>
+            <form method="POST" action="/resend-otp" class="d-inline">
+                <input type="hidden" name="username" value="{{ username }}">
+                <input type="hidden" name="next" value="{{ next_url or '' }}">
+                <button type="submit" class="btn btn-outline-secondary btn-sm me-2">Resend OTP</button>
+            </form>
+            <a href="/login" class="btn btn-outline-secondary btn-sm">Back to Login</a>
         </div>
     </div>
 </div>
