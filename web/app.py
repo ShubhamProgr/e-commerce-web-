@@ -254,7 +254,9 @@ def admin_dashboard():
     if current_user.role != 'admin':
         return "Access Denied", 403
     products = list(db.catalog.find())
-    return render_template('admin_dashboard.html', products=products)
+    # Fetch all customers with their orders
+    customers = list(db.users.find({"role": {"$ne": "admin"}}, {"username": 1, "email": 1, "orders": 1}))
+    return render_template('admin_dashboard.html', products=products, customers=customers)
 
 @app.route('/admin/users')
 @login_required
@@ -731,8 +733,6 @@ def order_history():
         return redirect(url_for('view_cart'))
 
 
-if __name__ == '__main__':         
-    app.run(debug=True)
-
-
-
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)

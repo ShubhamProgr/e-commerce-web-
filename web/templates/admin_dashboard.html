@@ -29,87 +29,148 @@
     </nav>
 
     <div class="container pb-5">
-        <div class="card admin-card mb-5">
-            <div class="card-header header-bg py-3">
-                <h5 class="mb-0 fw-bold">Add New Harvest Item</h5>
-            </div>
-            <div class="card-body p-4">
-                <form action="/admin/add-product" method="POST" class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold">Item name</label>
-                        <input type="text" name="item" class="form-control" placeholder="e.g. Sharbati Wheat Flour" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold">Brand / farm</label>
-                        <input type="text" name="brand" class="form-control" placeholder="e.g. GreenFields Co-op" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold">Category</label>
-                        <input type="text" name="category" class="form-control" placeholder="e.g. Wheat & Flours / Pulses" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">Price (₹)</label>
-                        <input type="number" name="price" class="form-control" placeholder="0" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">Stock Quantity</label>
-                        <input type="number" name="stock" class="form-control" placeholder="0" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">Image URL</label>
-                        <input type="url" name="image" class="form-control" placeholder="https://placehold.co/400x400?text=Product">
-                    </div>
-                    <div class="col-12 text-end">
-                        <button type="submit" class="btn btn-success px-5 fw-bold">Add item</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <h3 class="mb-4 fw-bold">Manage farm inventory</h3>
+        <h2 class="mb-4 fw-bold">Admin Dashboard</h2>
         
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-close="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-
-        <div class="table-responsive bg-white p-4 shadow-sm rounded-4">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Product Name</th>
-                        <th>Category</th>
-                        <th>Price (₹)</th>
-                        <th>Stock</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for product in products %}
-                    <tr>
-                        <form action="/admin/edit/{{ product._id }}" method="POST">
-                            <td><strong>{{ product.item }}</strong></td>
-                            <td><span class="badge badge-category">{{ product.category }}</span></td>
-                            <td>
-                                <input type="number" name="price" class="form-control form-control-sm" value="{{ product.price }}" style="width: 100px;">
-                            </td>
-                            <td>
-                                <input type="number" name="stock" class="form-control form-control-sm" value="{{ product.stock }}" style="width: 80px;">
-                            </td>
-                            <td class="text-end">
-                                <button type="submit" class="btn btn-primary btn-sm px-3">Update</button>
-                            </td>
+        <!-- Nav tabs -->
+        <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab" aria-controls="inventory" aria-selected="true">Inventory</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab" aria-controls="customers" aria-selected="false">Customers</button>
+            </li>
+        </ul>
+        
+        <!-- Tab content -->
+        <div class="tab-content" id="adminTabsContent">
+            <!-- Inventory Tab -->
+            <div class="tab-pane fade show active" id="inventory" role="tabpanel" aria-labelledby="inventory-tab">
+                <div class="card admin-card mb-5 mt-4">
+                    <div class="card-header header-bg py-3">
+                        <h5 class="mb-0 fw-bold">Add New Harvest Item</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form action="/admin/add-product" method="POST" class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Item name</label>
+                                <input type="text" name="item" class="form-control" placeholder="e.g. Sharbati Wheat Flour" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Brand / farm</label>
+                                <input type="text" name="brand" class="form-control" placeholder="e.g. GreenFields Co-op" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Category</label>
+                                <input type="text" name="category" class="form-control" placeholder="e.g. Wheat & Flours / Pulses" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Price (₹)</label>
+                                <input type="number" name="price" class="form-control" placeholder="0" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Stock Quantity</label>
+                                <input type="number" name="stock" class="form-control" placeholder="0" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Image URL</label>
+                                <input type="url" name="image" class="form-control" placeholder="https://placehold.co/400x400?text=Product">
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-success px-5 fw-bold">Add item</button>
+                            </div>
                         </form>
-                    </tr>
+                    </div>
+                </div>
+
+                <h3 class="mb-4 fw-bold">Manage farm inventory</h3>
+                
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    {% for message in messages %}
+                      <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-close="alert" aria-label="Close"></button>
+                      </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                  {% endif %}
+                {% endwith %}
+
+                <div class="table-responsive bg-white p-4 shadow-sm rounded-4">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Price (₹)</th>
+                                <th>Stock</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <form action="/admin/edit/{{ product._id }}" method="POST">
+                                    <td><strong>{{ product.item }}</strong></td>
+                                    <td><span class="badge badge-category">{{ product.category }}</span></td>
+                                    <td>
+                                        <input type="number" name="price" class="form-control form-control-sm" value="{{ product.price }}" style="width: 100px;">
+                                    </td>
+                                    <td>
+                                        <input type="number" name="stock" class="form-control form-control-sm" value="{{ product.stock }}" style="width: 80px;">
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="submit" class="btn btn-primary btn-sm px-3">Update</button>
+                                    </td>
+                                </form>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Customers Tab -->
+            <div class="tab-pane fade" id="customers" role="tabpanel" aria-labelledby="customers-tab">
+                <h3 class="mb-4 fw-bold mt-4">Customer Information</h3>
+                
+                {% for customer in customers %}
+                <div class="card admin-card mb-4">
+                    <div class="card-header header-bg py-3">
+                        <h5 class="mb-0 fw-bold">{{ customer.username }}</h5>
+                        <small class="text-white-50">{{ customer.email }}</small>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if customer.orders %}
+                            <h6 class="mb-3">Order History</h6>
+                            {% for order in customer.orders %}
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <strong>Order Date:</strong><br>
+                                        {{ order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else 'N/A' }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Items:</strong><br>
+                                        <ul class="list-unstyled mb-0">
+                                            {% for item in order.items %}
+                                            <li>{{ item.product_name }} ({{ item.quantity }} × ₹{{ item.price_per_unit }})</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <strong>Total: ₹{{ order.total_amount }}</strong><br>
+                                        <span class="badge bg-success">{{ order.status }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted mb-0">No orders placed yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
     
