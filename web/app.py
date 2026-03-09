@@ -17,9 +17,8 @@ load_dotenv(_env_path)
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here" # Required for sessions
 
-# Database Setup
 uri = os.getenv("MONGO_URL")
-client = pymongo.MongoClient(uri)
+client = pymongo.MongoClient(uri, tlsCAFile=certifi.where())
 db = client["online_store"]
 
 # Login Manager Setup
