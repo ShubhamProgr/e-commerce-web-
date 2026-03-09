@@ -19,7 +19,7 @@ app.secret_key = "your_secret_key_here" # Required for sessions
 
 # Database Setup
 uri = os.getenv("MONGO_URL")
-client = pymongo.MongoClient(uri, tlsCAFile=certifi.where())
+client = pymongo.MongoClient(uri)
 db = client["online_store"]
 
 # Login Manager Setup
