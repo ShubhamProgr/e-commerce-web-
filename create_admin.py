@@ -24,8 +24,12 @@ def create_first_admin():
     # Hash the password for security and insert
     admin_user = {
         "username": admin_username,
+        "email": "admin@greenfieldsfarm.com",
         "password": generate_password_hash(admin_password),
-        "role": "admin"
+        "role": "admin",
+        "is_verified": True,
+        "cart": [],
+        "orders": []
     }
     
     db.users.insert_one(admin_user)

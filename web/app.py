@@ -28,6 +28,8 @@ login_manager.login_view = 'login'
 
 class User(UserMixin):
     def __init__(self, user_data):
+        if not user_data or '_id' not in user_data:
+            raise ValueError("Invalid user data: missing _id field")
         self.id = str(user_data['_id'])
         self.username = user_data.get('username')
         self.role = user_data.get('role', 'customer')
@@ -209,7 +211,8 @@ def login():
         user_data = db.users.find_one({"username": username})
         
         if user_data:
-            if not check_password_hash(user_data['password'], password):
+            stored_password = user_data.get('password')
+            if not stored_password or not check_password_hash(stored_password, password):
                 flash('Invalid password for existing user.')
                 return redirect(url_for('login'))
 
@@ -339,7 +342,7 @@ def verify_otp():
             flash('User not found. Please register again.', 'error')
             return redirect(url_for('register'))
 
-        stored_code = user_data.get('otp_code')
+        stored_code = str(user_data.get('otp_code', '')).strip()
         expires_at = user_data.get('otp_expires_at')
 
         if not stored_code or not expires_at or expires_at < datetime.utcnow():
@@ -358,7 +361,7 @@ def verify_otp():
                 args["next"] = post_login_redirect
             return redirect(url_for('verify_otp', **args))
 
-        if otp_input == stored_code:
+        if str(otp_input).strip() == str(stored_code).strip():
             db.users.update_one(
                 {"_id": user_data['_id']},
                 {

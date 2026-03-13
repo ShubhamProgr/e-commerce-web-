@@ -1,7 +1,6 @@
 import os, certifi, pymongo
 from dotenv import load_dotenv
 
-# Load connection and connect to Atlas
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 client = pymongo.MongoClient(os.getenv("MONGO_URL"), tlsCAFile=certifi.where())
 db = client["online_store"]
