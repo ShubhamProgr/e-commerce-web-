@@ -2,42 +2,219 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard | GreenFields Farm Shop</title>
+    <title>Admin Dashboard | Organic Pulse Collective</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --brand-green: #1b7a40;
-            --brand-green-dark: #14532d;
+            --brand-green: #2d7a4a;
+            --brand-green-dark: #1a4d2e;
+            --brand-accent: #52b788;
+            --brand-green-light: #d4edda;
         }
-        body { background: radial-gradient(circle at top, #e8f5e9 0, #f9fafb 55%, #f3f4f6 100%); }
-        .admin-card { border-radius: 18px; border: none; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08); }
-        .header-bg { background: linear-gradient(135deg, var(--brand-green), var(--brand-green-dark)); color: white; }
-        .badge-category { background-color: #ecfdf3; color: var(--brand-green-dark); }
-        .btn-farm-outline { border-color: #e5e7eb; color: #111827; background-color: #ffffff; }
-        .btn-farm-outline:hover { border-color: var(--brand-green-dark); color: var(--brand-green-dark); }
+        body { 
+            background: linear-gradient(135deg, #f8fdf9, #e8f5e9);
+            font-family: 'Outfit', sans-serif;
+        }
+        .admin-card { 
+            border-radius: 16px; 
+            border: 1px solid rgba(45, 122, 74, 0.1);
+            box-shadow: 0 4px 12px rgba(26, 77, 46, 0.08);
+            transition: all 0.3s ease;
+        }
+        .admin-card:hover {
+            box-shadow: 0 8px 20px rgba(26, 77, 46, 0.12);
+        }
+        .header-bg { 
+            background: linear-gradient(135deg, var(--brand-green), var(--brand-accent)); 
+            color: white;
+        }
+        .badge-category { 
+            background-color: var(--brand-green-light); 
+            color: var(--brand-green-dark);
+            border: 1px solid rgba(45, 122, 74, 0.2);
+            font-weight: 600;
+        }
+        .btn-farm-outline { 
+            border-color: var(--brand-green);
+            color: var(--brand-green-dark); 
+            background-color: #ffffff;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-farm-outline:hover { 
+            border-color: var(--brand-green-dark); 
+            color: white;
+            background-color: var(--brand-green);
+        }
+        .navbar-admin {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 2px 12px rgba(26, 77, 46, 0.08);
+            border-bottom: 1px solid rgba(45, 122, 74, 0.1);
+        }
+        .navbar-brand-admin {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--brand-green-dark) !important;
+            letter-spacing: 1px;
+        }
+        .form-control {
+            border: 1.5px solid #ddd;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: var(--brand-green);
+            box-shadow: 0 0 0 2px rgba(45, 122, 74, 0.15);
+        }
+        .btn-add {
+            background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        .btn-add:hover {
+            background: linear-gradient(135deg, var(--brand-green-dark), var(--brand-green));
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(26, 77, 46, 0.25);
+        }
+        .btn-update {
+            background: var(--brand-green);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-update:hover {
+            background: var(--brand-green-dark);
+            transform: translateY(-2px);
+        }
+        .table {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        .table thead th {
+            background: var(--brand-green-light);
+            color: var(--brand-green-dark);
+            font-weight: 700;
+            border: none;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(45, 122, 74, 0.05);
+        }
+        .nav-tabs {
+            border-bottom: 2px solid rgba(45, 122, 74, 0.2);
+        }
+        .nav-tabs .nav-link {
+            color: var(--text-light);
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .nav-tabs .nav-link:hover {
+            color: var(--brand-green-dark);
+        }
+        .nav-tabs .nav-link.active {
+            background: none;
+            color: var(--brand-green-dark);
+            border-bottom-color: var(--brand-green);
+        }
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--brand-green-dark);
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+        .section-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--brand-green-dark);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .order-item {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+        .customer-card-header {
+            background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
+            padding: 18px 20px;
+            color: white;
+        }
+        .customer-name {
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .customer-email {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .order-info-box {
+            background: var(--brand-green-light);
+            border: 1px solid rgba(45, 122, 74, 0.2);
+            border-left: 4px solid var(--brand-green);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .order-label {
+            font-weight: 700;
+            color: var(--brand-green-dark);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .order-value {
+            color: var(--brand-green-dark);
+            margin-top: 4px;
+        }
+        .badge-status {
+            background: var(--brand-accent);
+            color: white;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
     </style>
 </head>
 <body class="bg-transparent">
-    <nav class="navbar mb-4" style="background-color: #ffffff; border-bottom: 1px solid #e5e7eb;">
-        <div class="container">
-            <span class="navbar-brand fw-bold text-success">GreenFields Admin · {{ current_user.username }}</span>
-            <div>
-                <a href="/" class="btn btn-sm btn-farm-outline me-2">View Farm Shop</a>
-                <a href="/logout" class="btn btn-sm btn-outline-danger">Logout</a>
+    <nav class="navbar navbar-admin mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand-admin"><i class="fas fa-leaf"></i> ORGANIC PULSE ADMIN</span>
+            <div class="ms-auto">
+                <span class="text-muted me-3" style="font-size: 0.9rem;">
+                    <i class="fas fa-user"></i> {{ current_user.username }}
+                </span>
+                <a href="/" class="btn btn-sm btn-farm-outline me-2"><i class="fas fa-home"></i> Store</a>
+                <a href="/logout" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
     </nav>
 
-    <div class="container pb-5">
-        <h2 class="mb-4 fw-bold">Admin Dashboard</h2>
+    <div class="container-fluid pb-5" style="padding: 0 20px;">
+        <h1 class="dashboard-title"><i class="fas fa-chart-line"></i> Admin Dashboard</h1>
         
         <!-- Nav tabs -->
-        <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+        <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab" aria-controls="inventory" aria-selected="true">Inventory</button>
+                <button class="nav-link active" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab" aria-controls="inventory" aria-selected="true">
+                    <i class="fas fa-boxes"></i> Inventory Management
+                </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab" aria-controls="customers" aria-selected="false">Customers</button>
+                <button class="nav-link" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab" aria-controls="customers" aria-selected="false">
+                    <i class="fas fa-users"></i> Customer Orders
+                </button>
             </li>
         </ul>
         
@@ -45,81 +222,84 @@
         <div class="tab-content" id="adminTabsContent">
             <!-- Inventory Tab -->
             <div class="tab-pane fade show active" id="inventory" role="tabpanel" aria-labelledby="inventory-tab">
-                <div class="card admin-card mb-5 mt-4">
-                    <div class="card-header header-bg py-3">
-                        <h5 class="mb-0 fw-bold">Add New Harvest Item</h5>
+                <div class="card admin-card mb-5">
+                    <div class="card-header header-bg py-4">
+                        <h5 class="mb-0 fw-bold"><i class="fas fa-plus-circle"></i> Add New Product</h5>
                     </div>
                     <div class="card-body p-4">
                         <form action="/admin/add-product" method="POST" class="row g-3">
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold">Item name</label>
-                                <input type="text" name="item" class="form-control" placeholder="e.g. Sharbati Wheat Flour" required>
+                                <label class="form-label fw-bold">Product Name</label>
+                                <input type="text" name="item" class="form-control" placeholder="e.g. Moong Dal, Chickpeas" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold">Brand / farm</label>
-                                <input type="text" name="brand" class="form-control" placeholder="e.g. GreenFields Co-op" required>
+                                <label class="form-label fw-bold">Farm/Brand</label>
+                                <input type="text" name="brand" class="form-control" placeholder="e.g. Organic Farms India" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-bold">Category</label>
-                                <input type="text" name="category" class="form-control" placeholder="e.g. Wheat & Flours / Pulses" required>
+                                <label class="form-label fw-bold">Category</label>
+                                <input type="text" name="category" class="form-control" placeholder="e.g. Pulses / Legumes" required>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold">Price (₹)</label>
+                                <label class="form-label fw-bold">Price (₹)</label>
                                 <input type="number" name="price" class="form-control" placeholder="0" required>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold">Stock Quantity</label>
+                                <label class="form-label fw-bold">Stock Quantity</label>
                                 <input type="number" name="stock" class="form-control" placeholder="0" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold">Image URL</label>
-                                <input type="url" name="image" class="form-control" placeholder="https://placehold.co/400x400?text=Product">
+                                <label class="form-label fw-bold">Image URL</label>
+                                <input type="url" name="image" class="form-control" placeholder="https://...">
                             </div>
                             <div class="col-12 text-end">
-                                <button type="submit" class="btn btn-success px-5 fw-bold">Add item</button>
+                                <button type="submit" class="btn btn-add px-5"><i class="fas fa-save"></i> Add Product</button>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                <h3 class="mb-4 fw-bold">Manage farm inventory</h3>
+                <h2 class="section-title"><i class="fas fa-warehouse"></i> Current Inventory</h2>
                 
                 {% with messages = get_flashed_messages() %}
                   {% if messages %}
                     {% for message in messages %}
                       <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ message }}
+                        <i class="fas fa-check-circle"></i> {{ message }}
                         <button type="button" class="btn-close" data-bs-close="alert" aria-label="Close"></button>
                       </div>
                     {% endfor %}
                   {% endif %}
                 {% endwith %}
 
-                <div class="table-responsive bg-white p-4 shadow-sm rounded-4">
+                <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
-                                <th>Product Name</th>
+                                <th><i class="fas fa-tag"></i> Product</th>
                                 <th>Category</th>
-                                <th>Price (₹)</th>
-                                <th>Stock</th>
+                                <th><i class="fas fa-rupee-sign"></i> Price</th>
+                                <th><i class="fas fa-cubes"></i> Stock</th>
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for product in products %}
                             <tr>
-                                <form action="/admin/edit/{{ product._id }}" method="POST">
+                                <form action="/admin/edit/{{ product._id }}" method="POST" class="w-100">
                                     <td><strong>{{ product.item }}</strong></td>
                                     <td><span class="badge badge-category">{{ product.category }}</span></td>
                                     <td>
-                                        <input type="number" name="price" class="form-control form-control-sm" value="{{ product.price }}" style="width: 100px;">
+                                        <div class="input-group" style="width: 120px;">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" name="price" class="form-control form-control-sm" value="{{ product.price }}" required>
+                                        </div>
                                     </td>
                                     <td>
-                                        <input type="number" name="stock" class="form-control form-control-sm" value="{{ product.stock }}" style="width: 80px;">
+                                        <input type="number" name="stock" class="form-control form-control-sm" value="{{ product.stock }}" style="width: 100px;" required>
                                     </td>
                                     <td class="text-end">
-                                        <button type="submit" class="btn btn-primary btn-sm px-3">Update</button>
+                                        <button type="submit" class="btn btn-update btn-sm"><i class="fas fa-refresh"></i> Update</button>
                                     </td>
                                 </form>
                             </tr>
@@ -131,45 +311,58 @@
             
             <!-- Customers Tab -->
             <div class="tab-pane fade" id="customers" role="tabpanel" aria-labelledby="customers-tab">
-                <h3 class="mb-4 fw-bold mt-4">Customer Information</h3>
+                <h2 class="section-title mt-4"><i class="fas fa-shopping-bag"></i> Customer Orders</h2>
                 
-                {% for customer in customers %}
-                <div class="card admin-card mb-4">
-                    <div class="card-header header-bg py-3">
-                        <h5 class="mb-0 fw-bold">{{ customer.username }}</h5>
-                        <small class="text-white-50">{{ customer.email }}</small>
-                    </div>
-                    <div class="card-body p-4">
-                        {% if customer.orders %}
-                            <h6 class="mb-3">Order History</h6>
-                            {% for order in customer.orders %}
-                            <div class="border rounded p-3 mb-3 bg-light">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <strong>Order Date:</strong><br>
-                                        {{ order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else 'N/A' }}
-                                    </div>
-                                    <div class="col-md-6">
-                                        <strong>Items:</strong><br>
-                                        <ul class="list-unstyled mb-0">
-                                            {% for item in order.items %}
-                                            <li>{{ item.product_name }} ({{ item.quantity }} × ₹{{ item.price_per_unit }})</li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
-                                    <div class="col-md-3 text-end">
-                                        <strong>Total: ₹{{ order.total_amount }}</strong><br>
-                                        <span class="badge bg-success">{{ order.status }}</span>
+                {% if customers %}
+                    {% for customer in customers %}
+                    <div class="card admin-card mb-4">
+                        <div class="customer-card-header">
+                            <div class="customer-name">👤 {{ customer.username }}</div>
+                            <div class="customer-email"><i class="fas fa-envelope"></i> {{ customer.email }}</div>
+                        </div>
+                        <div class="card-body p-4">
+                            {% if customer.orders and customer.orders|length > 0 %}
+                                <h6 class="fw-bold mb-3"><i class="fas fa-history"></i> Order History</h6>
+                                {% for order in customer.orders %}
+                                <div class="order-info-box">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="order-label">Order Date</div>
+                                            <div class="order-value">
+                                                {{ order.order_date.strftime('%d %b %Y, %I:%M %p') if order.order_date else 'N/A' }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="order-label">Items Ordered</div>
+                                            <div class="order-value">
+                                                <ul class="list-unstyled mb-0">
+                                                    {% for item in order.items %}
+                                                    <li><strong>{{ item.product_name }}</strong> - {{ item.quantity }} × ₹{{ item.price_per_unit }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            <div class="order-label">Total Amount</div>
+                                            <div class="order-value fw-bold" style="font-size: 1.2rem; color: var(--brand-accent);">
+                                                ₹{{ order.total_amount}}
+                                            </div>
+                                            <span class="badge-status mt-2">{{ order.status|upper }}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-muted mb-0">No orders placed yet.</p>
-                        {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted mb-0"><i class="fas fa-info-circle"></i> No orders placed yet by this customer.</p>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i> No customers found.
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

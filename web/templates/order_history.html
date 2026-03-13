@@ -1,94 +1,397 @@
 {% extends "base.html" %}
 
-{% block title %}My Orders - GreenFields Farm Shop{% endblock %}
+{% block title %}My Orders - Organic Pulse Collective{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h1 class="mb-4">Order History</h1>
+<style>
+    :root {
+        --brand-green: #2d7a4a;
+        --brand-green-dark: #1a4d2e;
+        --brand-accent: #52b788;
+        --brand-green-light: #d4edda;
+    }
+
+    .orders-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--brand-green-dark);
+        margin-bottom: 30px;
+        letter-spacing: -0.5px;
+    }
+
+    .order-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(45, 122, 74, 0.1);
+        box-shadow: 0 4px 12px rgba(26, 77, 46, 0.08);
+        transition: all 0.3s ease;
+        margin-bottom: 24px;
+    }
+
+    .order-card:hover {
+        box-shadow: 0 8px 20px rgba(26, 77, 46, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .order-header {
+        background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
+        color: white;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .order-number {
+        font-size: 0.9rem;
+        font-weight: 600;
+        opacity: 0.9;
+        margin-bottom: 4px;
+    }
+
+    .order-id {
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+    }
+
+    .order-date {
+        font-size: 0.85rem;
+        opacity: 0.85;
+        margin-top: 4px;
+    }
+
+    .order-status {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .order-body {
+        padding: 24px;
+    }
+
+    .items-section-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--brand-green-dark);
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .order-items-table {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    .items-head {
+        border-bottom: 2px solid var(--brand-green-light);
+        padding-bottom: 10px;
+        margin-bottom: 12px;
+    }
+
+    .items-head-row {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: var(--brand-green-dark);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .order-item-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--brand-green-light);
+        align-items: center;
+    }
+
+    .order-item-row:last-child {
+        border-bottom: none;
+    }
+
+    .item-details {
+        flex: 1;
+    }
+
+    .item-name {
+        font-weight: 700;
+        color: var(--brand-green-dark);
+        margin-bottom: 4px;
+        font-size: 0.95rem;
+    }
+
+    .item-brand {
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    .item-quantity {
+        text-align: center;
+        font-weight: 600;
+        color: var(--brand-green-dark);
+        width: 60px;
+    }
+
+    .item-price {
+        text-align: right;
+        font-weight: 700;
+        color: var(--brand-accent);
+        min-width: 100px;
+        font-size: 1rem;
+    }
+
+    .order-summary {
+        background: var(--brand-green-light);
+        padding: 16px;
+        border-radius: 12px;
+        margin-top: 20px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        align-items: center;
+    }
+
+    .summary-row:last-child {
+        margin-bottom: 0;
+        padding-top: 8px;
+        border-top: 2px solid rgba(45, 122, 74, 0.3);
+    }
+
+    .summary-label {
+        color: var(--brand-green-dark);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .summary-value {
+        font-weight: 700;
+        color: var(--brand-green-dark);
+    }
+
+    .summary-total {
+        font-size: 1.1rem;
+        color: var(--brand-accent);
+    }
+
+    .order-footer {
+        background: var(--brand-green-light);
+        padding: 16px 20px;
+        font-size: 0.85rem;
+        color: var(--brand-green-dark);
+        border-top: 1px solid rgba(45, 122, 74, 0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .email-badge {
+        background: white;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state-icon {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: var(--brand-green-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 3rem;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--brand-green-dark);
+        margin-bottom: 10px;
+    }
+
+    .empty-state-text {
+        color: #666;
+        margin-bottom: 25px;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .btn-continue-shop {
+        background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-continue-shop:hover {
+        background: linear-gradient(135deg, var(--brand-green-dark), var(--brand-green));
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(26, 77, 46, 0.25);
+        color: white;
+    }
+
+    .action-buttons {
+        margin-top: 30px;
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .btn-action {
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-back {
+        border: 2px solid var(--brand-green);
+        color: var(--brand-green-dark);
+        background: white;
+    }
+
+    .btn-back:hover {
+        background: var(--brand-green);
+        color: white;
+    }
+</style>
+
+<div class="orders-container">
+    <h1 class="page-title"><i class="fas fa-receipt"></i> Order History</h1>
 
     {% if orders %}
-        <div class="row">
+        <div class="orders-grid">
             {% for order in orders %}
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h5 class="mb-1">Order #{{ order._id }}</h5>
-                                <small>{{ order.order_date.strftime('%d %B %Y, %I:%M %p') }}</small>
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <div class="order-number">Order ID</div>
+                        <div class="order-id">#{{ order._id }}</div>
+                        <div class="order-date">
+                            <i class="fas fa-calendar"></i> {{ order.order_date.strftime('%d %b %Y, %I:%M %p') }}
+                        </div>
+                    </div>
+                    <div>
+                        <span class="order-status">
+                            <i class="fas fa-check-circle"></i> {{ order.status|upper }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="order-body">
+                    <div class="items-section-title">Order Items</div>
+                    
+                    <div class="order-items-table">
+                        <div class="items-head">
+                            <div class="items-head-row">
+                                <div style="flex: 1;">Product</div>
+                                <div style="width: 60px; text-align: center;">Qty</div>
+                                <div style="min-width: 100px; text-align: right;">Price</div>
                             </div>
-                            <div class="text-right">
-                                <span class="badge badge-success">{{ order.status|upper }}</span>
+                        </div>
+
+                        {% for item in order.items %}
+                        <div class="order-item-row">
+                            <div class="item-details">
+                                <div class="item-name">{{ item.product_name }}</div>
+                                {% if item.brand %}
+                                <div class="item-brand">From: {{ item.brand }}</div>
+                                {% endif %}
                             </div>
+                            <div class="item-quantity">{{ item.quantity }}x</div>
+                            <div class="item-price">₹{{ "%.0f"|format(item.item_total) }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <span class="summary-label">Subtotal</span>
+                            <span class="summary-value">₹{{ "%.0f"|format(order.total_amount) }}</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Tax</span>
+                            <span class="summary-value">₹0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Delivery</span>
+                            <span class="summary-value" style="color: var(--brand-accent);">FREE</span>
+                        </div>
+                        <div class="summary-row">
+                            <span class="summary-label">Total Amount</span>
+                            <span class="summary-value summary-total">₹{{ "%.0f"|format(order.total_amount) }}</span>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <h6 class="card-subtitle text-muted mb-3">Order Items:</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-borderless">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Product</th>
-                                        <th class="text-center">Qty</th>
-                                        <th class="text-right">Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in order.items %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ item.product_name }}</strong>
-                                            {% if item.brand %}
-                                            <br><small class="text-muted">{{ item.brand }}</small>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-center">{{ item.quantity }}</td>
-                                        <td class="text-right">₹{{ "%.2f"|format(item.item_total) }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <h6>Total Amount:</h6>
-                            <h6 class="font-weight-bold text-primary">₹{{ "%.2f"|format(order.total_amount) }}</h6>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-light">
-                        <small class="text-muted">
-                            Email: {{ order.email }}
-                        </small>
-                    </div>
+                </div>
+
+                <div class="order-footer">
+                    <span><i class="fas fa-envelope"></i> Order confirmation sent to:</span>
+                    <span class="email-badge">{{ order.email }}</span>
                 </div>
             </div>
             {% endfor %}
         </div>
     {% else %}
-        <div class="alert alert-info" role="alert">
-            <h5>No Orders Yet</h5>
-            <p>You haven't placed any orders yet. Start shopping and place your first order!</p>
-            <a href="{{ url_for('index') }}" class="btn btn-primary">Continue Shopping</a>
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+            <h3 class="empty-state-title">No Orders Yet</h3>
+            <p class="empty-state-text">
+                You haven't placed any orders yet. Start shopping for premium organic pulses, legumes, and farm products now!
+            </p>
+            <a href="{{ url_for('index') }}" class="btn-continue-shop">
+                <i class="fas fa-leaf"></i> Continue Shopping
+            </a>
         </div>
     {% endif %}
 
-    <div class="mt-4">
-        <a href="{{ url_for('view_cart') }}" class="btn btn-outline-secondary">Back to Cart</a>
-        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">Continue Shopping</a>
+    {% if orders %}
+    <div class="action-buttons">
+        <a href="{{ url_for('view_cart') }}" class="btn-action btn-back">
+            <i class="fas fa-shopping-cart"></i> Back to Cart
+        </a>
+        <a href="{{ url_for('index') }}" class="btn-action btn-continue-shop">
+            <i class="fas fa-leaf"></i> Browse More Products
+        </a>
     </div>
+    {% endif %}
 </div>
 
-<style>
-    .card {
-        border: 1px solid #e0e0e0;
-        transition: box-shadow 0.3s ease;
-    }
-    .card:hover {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
-    }
-    .table-responsive {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-</style>
 {% endblock %}

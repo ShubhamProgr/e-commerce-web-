@@ -370,6 +370,9 @@ def verify_otp():
             login_user(user_obj)
             _merge_guest_cart_into_user(user_data['_id'])
             flash('Your account has been verified. Welcome to GreenFields Farm Shop!', 'success')
+            # Redirect admins to dashboard, customers to post_login_redirect
+            if user_data.get('role') == 'admin':
+                return redirect(url_for('admin_dashboard'))
             return redirect(post_login_redirect)
 
         flash('Wrong OTP entered. Please try again, resend, or go back to login.', 'error')

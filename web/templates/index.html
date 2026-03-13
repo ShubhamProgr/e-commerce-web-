@@ -1,104 +1,436 @@
 {% extends "base.html" %}
 
-{% block title %}GreenFields Farm Shop{% endblock %}
+{% block title %}Premium Organic Pulses, Legumes & Farm Products{% endblock %}
 
 {% block content %}
 <style>
-        :root {
-            --brand-green: #1b7a40;
-            --brand-green-dark: #14532d;
-            --brand-gold: #e0aa3e;
-            --bg-soft: #f3f8f3;
-        }
+    :root {
+        --brand-green: #2d7a4a;
+        --brand-green-dark: #1a4d2e;
+        --brand-green-light: #d4edda;
+        --brand-accent: #52b788;
+    }
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: radial-gradient(circle at top, #e8f5e9 0, #f9fafb 55%, #f3f4f6 100%);
-            color: #1f2933;
-        }
+    .farm-shell {
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
 
-        .farm-shell {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px 16px 40px;
-        }
+    .farm-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 40px;
+        gap: 30px;
+    }
 
+    .farm-logo-lockup {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .farm-logo-circle {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+    }
+
+    .farm-title-block h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--brand-green-dark);
+        margin: 0;
+    }
+
+    .farm-title-block p {
+        color: #6b7280;
+        margin: 5px 0 0 0;
+    }
+
+    .farm-cta-area {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .farm-tags {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .farm-tag {
+        background: var(--brand-green-light);
+        color: var(--brand-green-dark);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .farm-subheader {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 12px;
+        margin-top: 8px;
+    }
+
+    .farm-subheader h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--brand-green-dark);
+        margin: 0;
+    }
+
+    .farm-subheader span {
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
+    .farm-pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .farm-pill {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        border-radius: 999px;
+        background-color: #fefce8;
+        border: 1px solid rgba(234, 179, 8, 0.6);
+        color: #854d0e;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .farm-grid {
+        background-color: #ffffff;
+        border-radius: 18px;
+        padding: 18px 16px 10px;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .card {
+        border: 1px solid #edf2f7;
+        border-radius: 14px;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        background: linear-gradient(145deg, #ffffff, #f8fafc);
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(34, 197, 94, 0.4);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+    }
+
+    .image-box {
+        height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: radial-gradient(circle at top, #fef9c3 0, #ecfdf3 55%, #f9fafb 100%);
+        border-radius: 10px;
+    }
+
+    .image-box img {
+        max-height: 110px;
+        object-fit: contain;
+    }
+
+    .delivery-tag {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid #e5e7eb;
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 999px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .product-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        height: 2.4em;
+        overflow: hidden;
+    }
+
+    .product-qty {
+        color: #6b7280;
+        font-size: 0.75rem;
+        margin-bottom: 10px;
+    }
+
+    .price-label {
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
+    .btn-add {
+        color: var(--brand-green-dark);
+        background: #ffffff;
+        border: 1px solid var(--brand-green-dark);
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.75rem;
+        padding: 4px 16px;
+    }
+
+    .btn-add:hover {
+        background: var(--brand-green-dark);
+        color: #f9fafb;
+    }
+
+    .qty-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f3f4f6;
+        border-radius: 999px;
+        padding: 2px 6px;
+    }
+
+    .qty-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        border: none;
+        background: var(--brand-green-dark);
+        color: white;
+        font-size: 0.75rem;
+        padding: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+
+    .qty-btn:hover {
+        background: var(--brand-green);
+    }
+
+    .qty-display {
+        font-weight: 600;
+        font-size: 0.85rem;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    @media (max-width: 768px) {
         .farm-header {
-            display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: flex-start;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .farm-logo-lockup {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .farm-logo-circle {
-            width: 44px;
-            height: 44px;
-            border-radius: 999px;
-            background: linear-gradient(145deg, var(--brand-green), var(--brand-green-dark));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fefce8;
-            font-size: 1.4rem;
-        }
-
-        .farm-title-block h1 {
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            margin: 0;
-            color: var(--brand-green-dark);
-        }
-
-        .farm-title-block p {
-            margin: 2px 0 0;
-            font-size: 0.85rem;
-            color: #6b7280;
         }
 
         .farm-cta-area {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
+            align-items: flex-start;
         }
 
-        .farm-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            justify-content: flex-end;
+        .farm-shell {
+            padding-inline: 12px;
         }
+    }
+</style>
+<div class="farm-shell">
+    <header class="farm-header">
+        <div>
+            <div class="farm-logo-lockup">
+                <div class="farm-logo-circle">🌾</div>
+                <div class="farm-title-block">
+                    <h1>GreenFields Farm Shop</h1>
+                    <p>Whole grains, pulses & harvest staples directly from the farm.</p>
+                </div>
+            </div>
+        </div>
+        <div class="farm-cta-area">
+            <div class="farm-tags">
+                <span class="farm-tag">Wheat & multigrain flour</span>
+                <span class="farm-tag">Toor, moong & chana dal</span>
+                <span class="farm-tag">Barley, millets & oats</span>
+            </div>
+        </div>
+    </header>
 
-        .farm-tag {
-            font-size: 0.7rem;
-            padding: 4px 9px;
-            border-radius: 999px;
-            background-color: #ecfdf3;
-            border: 1px dashed rgba(34, 197, 94, 0.4);
-            color: var(--brand-green-dark);
-            font-weight: 500;
-        }
+    <section>
+        <div class="farm-subheader">
+            <h2>Farm pantry essentials</h2>
+            <span>Showing {{ products|length }} items from our latest harvest</span>
+        </div>
 
-        .farm-auth-buttons a {
-            font-size: 0.75rem;
-            border-radius: 999px;
-            padding-inline: 18px;
-            font-weight: 600;
-        }
+        <div class="farm-pill-row">
+            <div class="farm-pill">
+                <span>🌾</span>
+                <span>Wheat & flours</span>
+            </div>
+            <div class="farm-pill">
+                <span>🌱</span>
+                <span>Pulses & lentils</span>
+            </div>
+            <div class="farm-pill">
+                <span>🌾</span>
+                <span>Barley & millets</span>
+            </div>
+            <div class="farm-pill">
+                <span>🫘</span>
+                <span>Beans & grams</span>
+            </div>
+        </div>
 
-        .btn-farm-outline {
-            border-color: var(--brand-green-dark);
-            color: var(--brand-green-dark);
-        }
+        <div class="farm-grid">
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                {% for message in messages %}
+                  <div class="alert alert-success alert-dismissible fade show small py-2 mb-3 border-0 rounded-3 shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close small" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                {% for product in products %}
+                <div class="col">
+                    <div class="card h-100 p-2">
+                        <div class="image-box">
+                            <span class="delivery-tag">FRESH HARVEST</span>
+                            <img src="{{ product.image }}" 
+                                 alt="{{ product.item }}">
+                        </div>
+                        <div class="card-body p-1">
+                            <div class="product-name mt-2">{{ product.item }}</div>
+                            <div class="product-qty">{{ product.category }}</div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="d-flex flex-column">
+                                    <span class="price-label">Per pack</span>
+                                    <span class="fw-bold">₹{{ product.price }}</span>
+                                </div>
+                                <div class="product-controls" data-product-id="{{ product._id }}">
+                                    <button type="button" class="btn btn-add btn-add-to-cart">ADD</button>
+                                    <div class="qty-controls d-none">
+                                        <button type="button" class="qty-btn btn-decrement">−</button>
+                                        <span class="qty-display">0</span>
+                                        <button type="button" class="qty-btn btn-increment">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const productControls = document.querySelectorAll('.product-controls');
+        
+        productControls.forEach(control => {
+            const productId = control.dataset.productId;
+            const addBtn = control.querySelector('.btn-add-to-cart');
+            const qtyControls = control.querySelector('.qty-controls');
+            const qtyDisplay = control.querySelector('.qty-display');
+            const incrementBtn = control.querySelector('.btn-increment');
+            const decrementBtn = control.querySelector('.btn-decrement');
+            
+            // Load initial quantity from localStorage
+            const savedQty = parseInt(localStorage.getItem(`product_${productId}`) || '0');
+            if (savedQty > 0) {
+                addBtn.classList.add('d-none');
+                qtyControls.classList.remove('d-none');
+                qtyDisplay.textContent = savedQty;
+            }
+            
+            // Add to Cart button click
+            addBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    const response = await fetch(`/add_to_cart/${productId}`, {
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    });
+                    if (response.ok) {
+                        addBtn.classList.add('d-none');
+                        qtyControls.classList.remove('d-none');
+                        qtyDisplay.textContent = '1';
+                        localStorage.setItem(`product_${productId}`, '1');
+                    }
+                } catch (error) {
+                    console.error('Error adding to cart:', error);
+                }
+            });
+            
+            // Increment button
+            incrementBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    const response = await fetch(`/cart/increment/${productId}`, {
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    });
+                    if (response.ok) {
+                        const currentQty = parseInt(qtyDisplay.textContent) || 0;
+                        const newQty = currentQty + 1;
+                        qtyDisplay.textContent = newQty;
+                        localStorage.setItem(`product_${productId}`, newQty);
+                    }
+                } catch (error) {
+                    console.error('Error incrementing cart:', error);
+                }
+            });
+            
+            // Decrement button
+            decrementBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                    const currentQty = parseInt(qtyDisplay.textContent) || 0;
+                    if (currentQty > 1) {
+                        const response = await fetch(`/cart/decrement/${productId}`, {
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        });
+                        if (response.ok) {
+                            const newQty = currentQty - 1;
+                            qtyDisplay.textContent = newQty;
+                            localStorage.setItem(`product_${productId}`, newQty);
+                        }
+                    } else if (currentQty === 1) {
+                        const response = await fetch(`/remove_from_cart/${productId}`, {
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        });
+                        if (response.ok) {
+                            addBtn.classList.remove('d-none');
+                            qtyControls.classList.add('d-none');
+                            qtyDisplay.textContent = '0';
+                            localStorage.removeItem(`product_${productId}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error decrementing cart:', error);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
 
         .btn-farm-outline:hover {
             background-color: var(--brand-green-dark);
@@ -477,5 +809,4 @@
             });
         });
     </script>
-</style>
 {% endblock %}
