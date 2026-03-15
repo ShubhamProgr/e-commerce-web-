@@ -20,6 +20,10 @@ app.secret_key = "your_secret_key_here" # Required for sessions
 uri = os.getenv("MONGO_URL")
 client = pymongo.MongoClient(uri, tlsCAFile=certifi.where())
 db = client["online_store"]
+USERS_COLLECTION = db["users"]
+ADMIN_COLLECTION = db["admin"]
+ORDER_COLLECTION = db["order"]
+STATUS_COLLECTION = db["status"]
 
 # Login Manager Setup
 login_manager = LoginManager()
@@ -27,17 +31,102 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 class User(UserMixin):
-    def __init__(self, user_data):
+    def __init__(self, user_data, account_type='customer'):
         if not user_data or '_id' not in user_data:
             raise ValueError("Invalid user data: missing _id field")
         self.id = str(user_data['_id'])
+        self.account_type = 'admin' if account_type == 'admin' else 'customer'
         self.username = user_data.get('username')
-        self.role = user_data.get('role', 'customer')
+        self.role = 'admin' if self.account_type == 'admin' else 'customer'
+
+    def get_id(self):
+        return f"{self.account_type}:{self.id}"
+
+
+def _coerce_object_id(value):
+    if isinstance(value, ObjectId):
+        return value
+    try:
+        return ObjectId(str(value))
+    except Exception:
+        return None
+
+
+def _get_account_collection(account_type):
+    return ADMIN_COLLECTION if account_type == 'admin' else USERS_COLLECTION
+
+
+def _find_account_by_login(identifier):
+    lookup = (identifier or '').strip()
+    if not lookup:
+        return None, None
+
+    query = {
+        "$or": [
+            {"username": lookup},
+            {"email": lookup.lower()}
+        ]
+    }
+
+    admin_data = ADMIN_COLLECTION.find_one(query)
+    if admin_data:
+        return admin_data, 'admin'
+
+    user_data = USERS_COLLECTION.find_one(query)
+    if user_data:
+        return user_data, 'customer'
+
+    return None, None
+
+
+def _find_account_by_username(username, account_type=None):
+    lookup = (username or '').strip()
+    if not lookup:
+        return None, None
+
+    if account_type in {'admin', 'customer'}:
+        account_data = _get_account_collection(account_type).find_one({"username": lookup})
+        return account_data, account_type
+
+    admin_data = ADMIN_COLLECTION.find_one({"username": lookup})
+    if admin_data:
+        return admin_data, 'admin'
+
+    user_data = USERS_COLLECTION.find_one({"username": lookup})
+    if user_data:
+        return user_data, 'customer'
+
+    return None, None
 
 @login_manager.user_loader
 def load_user(user_id):
-    user_data = db.users.find_one({"_id": ObjectId(user_id)})
-    return User(user_data) if user_data else None
+    if not user_id:
+        return None
+
+    account_type = 'customer'
+    raw_user_id = user_id
+
+    if ':' in user_id:
+        account_type, raw_user_id = user_id.split(':', 1)
+
+    object_id = _coerce_object_id(raw_user_id)
+    if not object_id:
+        return None
+
+    collection = _get_account_collection(account_type)
+    user_data = collection.find_one({"_id": object_id})
+
+    if not user_data and account_type == 'customer':
+        user_data = ADMIN_COLLECTION.find_one({"_id": object_id})
+        if user_data:
+            account_type = 'admin'
+
+    if not user_data and account_type == 'admin':
+        user_data = USERS_COLLECTION.find_one({"_id": object_id})
+        if user_data:
+            account_type = 'customer'
+
+    return User(user_data, account_type) if user_data else None
 
 
 def _get_guest_cart():
@@ -62,8 +151,8 @@ def _merge_guest_cart_into_user(user_id):
             continue
 
     if object_ids:
-        db.users.update_one(
-            {"_id": ObjectId(user_id)},
+        USERS_COLLECTION.update_one(
+            {"_id": _coerce_object_id(user_id)},
             {"$push": {"cart": {"$each": object_ids}}}
         )
 
@@ -171,8 +260,34 @@ def _prepare_order_for_display(order):
     return prepared_order
 
 
-def _sort_orders_for_display(orders):
-    prepared_orders = [_prepare_order_for_display(order) for order in (orders or [])]
+def _get_status_map(order_ids):
+    normalized_ids = [oid for oid in (_coerce_object_id(value) for value in (order_ids or [])) if oid]
+    if not normalized_ids:
+        return {}
+
+    status_docs = list(STATUS_COLLECTION.find({"order_id": {"$in": normalized_ids}}))
+    return {
+        str(status_doc.get('order_id')): status_doc
+        for status_doc in status_docs
+        if status_doc.get('order_id')
+    }
+
+
+def _sort_orders_for_display(orders, status_map=None):
+    prepared_orders = []
+    for order in (orders or []):
+        prepared_order = dict(order)
+        status_doc = None
+        if status_map and prepared_order.get('_id'):
+            status_doc = status_map.get(str(prepared_order['_id']))
+
+        if status_doc:
+            prepared_order['status'] = status_doc.get('current_status')
+            prepared_order['status_updated_at'] = status_doc.get('updated_at')
+            prepared_order['status_history'] = status_doc.get('history', [])
+
+        prepared_orders.append(_prepare_order_for_display(prepared_order))
+
     return sorted(
         prepared_orders,
         key=lambda order: order.get('order_date') or datetime.min,
@@ -180,8 +295,27 @@ def _sort_orders_for_display(orders):
     )
 
 
+def _get_orders_for_users(user_ids):
+    normalized_user_ids = [oid for oid in (_coerce_object_id(value) for value in (user_ids or [])) if oid]
+    if not normalized_user_ids:
+        return {}
+
+    order_docs = list(ORDER_COLLECTION.find({"user_id": {"$in": normalized_user_ids}}))
+    status_map = _get_status_map([order.get('_id') for order in order_docs])
+    orders_by_user = {}
+
+    for order in _sort_orders_for_display(order_docs, status_map):
+        user_id = order.get('user_id')
+        if not user_id:
+            continue
+        orders_by_user.setdefault(str(user_id), []).append(order)
+
+    return orders_by_user
+
+
 def _build_customer_order_dashboard(customers):
     dashboard_customers = []
+    orders_by_user = _get_orders_for_users([customer.get('_id') for customer in customers])
     summary = {
         "total_customers": 0,
         "total_orders": 0,
@@ -194,7 +328,7 @@ def _build_customer_order_dashboard(customers):
 
     for customer in customers:
         customer_data = dict(customer)
-        orders = _sort_orders_for_display(customer_data.get('orders', []))
+        orders = orders_by_user.get(str(customer_data.get('_id')), [])
         order_counts = {status: 0 for status in ORDER_STATUS_FLOW}
         total_spent = 0
 
@@ -241,6 +375,93 @@ def datetime_display(value):
     if not display_value:
         return 'N/A'
     return display_value.strftime('%d %b %Y, %I:%M %p')
+
+
+def _ensure_normalized_collections():
+    USERS_COLLECTION.create_index('username')
+    USERS_COLLECTION.create_index('email')
+    ADMIN_COLLECTION.create_index('username')
+    ADMIN_COLLECTION.create_index('email')
+    ORDER_COLLECTION.create_index([('user_id', pymongo.ASCENDING), ('order_date', pymongo.DESCENDING)])
+    STATUS_COLLECTION.create_index('order_id', unique=True)
+    STATUS_COLLECTION.create_index('user_id')
+
+
+def _migrate_legacy_admins():
+    legacy_admins = list(USERS_COLLECTION.find({"role": "admin"}))
+    for legacy_admin in legacy_admins:
+        admin_doc = dict(legacy_admin)
+        admin_doc['role'] = 'admin'
+        admin_doc.pop('orders', None)
+
+        ADMIN_COLLECTION.replace_one(
+            {"_id": admin_doc['_id']},
+            admin_doc,
+            upsert=True,
+        )
+        USERS_COLLECTION.delete_one({"_id": admin_doc['_id']})
+
+
+def _migrate_legacy_orders():
+    legacy_customers = list(USERS_COLLECTION.find(
+        {"orders": {"$exists": True, "$type": "array", "$ne": []}},
+        {"username": 1, "email": 1, "orders": 1},
+    ))
+
+    for customer in legacy_customers:
+        customer_id = customer.get('_id')
+        for legacy_order in customer.get('orders', []):
+            if not isinstance(legacy_order, dict):
+                continue
+
+            order_id = _coerce_object_id(legacy_order.get('_id')) or ObjectId()
+            order_date = _normalize_datetime(legacy_order.get('order_date')) or datetime.utcnow()
+            current_status = _normalize_order_status(legacy_order.get('status'))
+            status_updated_at = _normalize_datetime(legacy_order.get('status_updated_at')) or order_date
+
+            order_doc = {
+                "_id": order_id,
+                "user_id": customer_id,
+                "customer_name": customer.get('username', ''),
+                "customer_email": customer.get('email', ''),
+                "order_date": order_date,
+                "items": legacy_order.get('items', []),
+                "total_amount": legacy_order.get('total_amount', 0),
+            }
+
+            ORDER_COLLECTION.update_one(
+                {"_id": order_id},
+                {"$setOnInsert": order_doc},
+                upsert=True,
+            )
+
+            STATUS_COLLECTION.update_one(
+                {"order_id": order_id},
+                {
+                    "$setOnInsert": {
+                        "order_id": order_id,
+                        "user_id": customer_id,
+                        "current_status": current_status,
+                        "updated_at": status_updated_at,
+                        "history": [{"status": current_status, "updated_at": status_updated_at}],
+                    }
+                },
+                upsert=True,
+            )
+
+        USERS_COLLECTION.update_one({"_id": customer_id}, {"$unset": {"orders": ""}})
+
+
+def _initialize_data_model():
+    try:
+        _ensure_normalized_collections()
+        _migrate_legacy_admins()
+        _migrate_legacy_orders()
+    except Exception as exc:
+        app.logger.exception(f"Failed to initialize normalized MongoDB collections: {exc}")
+
+
+_initialize_data_model()
 
 
 def _get_smtp_config():
