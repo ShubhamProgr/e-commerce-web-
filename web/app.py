@@ -2,7 +2,7 @@ import os
 import certifi
 import random
 import smtplib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -80,6 +80,31 @@ def _get_post_login_redirect():
 
 def generate_otp_code() -> str:
     return f"{random.randint(100000, 999999)}"
+
+
+def _normalize_datetime(value):
+    """Convert mixed datetime representations from Mongo into a naive UTC datetime."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        dt = value
+    elif isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        # Accept both ISO strings with Z and plain ISO strings.
+        text = text.replace('Z', '+00:00')
+        try:
+            dt = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+    else:
+        return None
+
+    # Keep comparisons consistent with datetime.utcnow() used in this file.
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
 
 
 def _get_smtp_config():
@@ -204,15 +229,42 @@ def login():
             flash('You need to sign in before accessing your cart.')
 
     if request.method == 'POST':
-        username = request.form.get('username')
+        username = (request.form.get('username') or '').strip()
         password = request.form.get('password')
+
+        if not username or not isinstance(password, str) or not password.strip():
+            flash('Please enter both username and password.')
+            return redirect(url_for('login'))
+
+        password = password.strip()
         
         # 1. Search for existing user
-        user_data = db.users.find_one({"username": username})
+        user_data = db.users.find_one(
+            {
+                "$or": [
+                    {"username": username},
+                    {"email": username.lower()}
+                ]
+            }
+        )
         
         if user_data:
             stored_password = user_data.get('password')
-            if not stored_password or not check_password_hash(stored_password, password):
+
+            if isinstance(stored_password, bytes):
+                stored_password = stored_password.decode('utf-8', errors='ignore')
+            elif stored_password is None:
+                stored_password = ''
+            else:
+                stored_password = str(stored_password)
+
+            try:
+                password_valid = bool(stored_password) and check_password_hash(stored_password, password)
+            except (ValueError, TypeError):
+                app.logger.exception("Invalid password format for user '%s'", user_data.get('username'))
+                password_valid = False
+
+            if not password_valid:
                 flash('Invalid password for existing user.')
                 return redirect(url_for('login'))
 
@@ -343,9 +395,10 @@ def verify_otp():
             return redirect(url_for('register'))
 
         stored_code = str(user_data.get('otp_code', '')).strip()
-        expires_at = user_data.get('otp_expires_at')
+        expires_at = _normalize_datetime(user_data.get('otp_expires_at'))
+        now_utc = datetime.utcnow()
 
-        if not stored_code or not expires_at or expires_at < datetime.utcnow():
+        if not stored_code or not expires_at or expires_at < now_utc:
             new_code = generate_otp_code()
             new_expires = datetime.utcnow() + timedelta(minutes=10)
             db.users.update_one(
@@ -361,7 +414,7 @@ def verify_otp():
                 args["next"] = post_login_redirect
             return redirect(url_for('verify_otp', **args))
 
-        if str(otp_input).strip() == str(stored_code).strip():
+        if str(otp_input or '').strip() == str(stored_code).strip():
             db.users.update_one(
                 {"_id": user_data['_id']},
                 {

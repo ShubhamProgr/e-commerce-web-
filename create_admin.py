@@ -16,9 +16,23 @@ def create_first_admin():
     admin_username = "admin"
     admin_password = "admin21944" 
 
-    # Check if admin already exists to avoid duplicates
-    if db.users.find_one({"username": admin_username}):
-        print("Admin user already exists.")
+    # If admin exists, repair missing fields so old records remain compatible.
+    existing_admin = db.users.find_one({"username": admin_username})
+    if existing_admin:
+        updates = {
+            "email": existing_admin.get("email") or "admin@greenfieldsfarm.com",
+            "role": "admin",
+            "is_verified": True,
+            "cart": existing_admin.get("cart") if isinstance(existing_admin.get("cart"), list) else [],
+            "orders": existing_admin.get("orders") if isinstance(existing_admin.get("orders"), list) else []
+        }
+
+        existing_password = existing_admin.get("password")
+        if not isinstance(existing_password, str) or not existing_password.startswith(("pbkdf2:", "scrypt:")):
+            updates["password"] = generate_password_hash(admin_password)
+
+        db.users.update_one({"_id": existing_admin["_id"]}, {"$set": updates})
+        print("Admin user already existed. Schema repaired successfully.")
         return
 
     # Hash the password for security and insert
