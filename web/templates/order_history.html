@@ -9,6 +9,10 @@
         --brand-green-dark: #1a4d2e;
         --brand-accent: #52b788;
         --brand-green-light: #d4edda;
+        --status-placed: #d97706;
+        --status-on-the-way: #2563eb;
+        --status-delivered: #15803d;
+        --status-cancelled: #b91c1c;
     }
 
     .orders-container {
@@ -70,7 +74,6 @@
 
     .order-status {
         display: inline-block;
-        background: rgba(255, 255, 255, 0.25);
         color: white;
         padding: 6px 14px;
         border-radius: 20px;
@@ -79,6 +82,25 @@
         letter-spacing: 0.5px;
         text-transform: uppercase;
         border: 1px solid rgba(255, 255, 255, 0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-placed {
+        background: var(--status-placed);
+    }
+
+    .status-on-the-way {
+        background: var(--status-on-the-way);
+    }
+
+    .status-delivered {
+        background: var(--status-delivered);
+    }
+
+    .status-cancelled {
+        background: var(--status-cancelled);
     }
 
     .order-body {
@@ -304,12 +326,12 @@
                         <div class="order-number">Order ID</div>
                         <div class="order-id">#{{ order._id }}</div>
                         <div class="order-date">
-                            <i class="fas fa-calendar"></i> {{ order.order_date.strftime('%d %b %Y, %I:%M %p') }}
+                            <i class="fas fa-calendar"></i> {{ order.order_date|datetime_display }}
                         </div>
                     </div>
                     <div>
-                        <span class="order-status">
-                            <i class="fas fa-check-circle"></i> {{ order.status|upper }}
+                        <span class="order-status {{ order.status_badge_class }}">
+                            <i class="fas {{ order.status_icon }}"></i> {{ order.status_label }}
                         </span>
                     </div>
                 </div>

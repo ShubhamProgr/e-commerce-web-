@@ -107,6 +107,142 @@ def _normalize_datetime(value):
     return dt
 
 
+ORDER_STATUS_LABELS = {
+    "placed": "Placed",
+    "on_the_way": "On The Way",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+}
+
+ORDER_STATUS_ICONS = {
+    "placed": "fa-receipt",
+    "on_the_way": "fa-truck-fast",
+    "delivered": "fa-circle-check",
+    "cancelled": "fa-ban",
+}
+
+ORDER_STATUS_BADGE_CLASSES = {
+    "placed": "status-placed",
+    "on_the_way": "status-on-the-way",
+    "delivered": "status-delivered",
+    "cancelled": "status-cancelled",
+}
+
+ORDER_STATUS_ALIASES = {
+    "pending": "placed",
+    "processing": "placed",
+    "confirmed": "placed",
+    "shipped": "on_the_way",
+    "shipping": "on_the_way",
+    "in_transit": "on_the_way",
+    "completed": "delivered",
+}
+
+ORDER_STATUS_FLOW = ("placed", "on_the_way", "delivered", "cancelled")
+
+
+def _normalize_order_status(status):
+    if status is None:
+        return "placed"
+
+    key = str(status).strip().lower().replace('-', '_').replace(' ', '_')
+    key = ORDER_STATUS_ALIASES.get(key, key)
+    if key not in ORDER_STATUS_LABELS:
+        return "placed"
+    return key
+
+
+def _prepare_order_for_display(order):
+    prepared_order = dict(order)
+    normalized_status = _normalize_order_status(prepared_order.get('status'))
+    prepared_order['status'] = normalized_status
+    prepared_order['status_label'] = ORDER_STATUS_LABELS[normalized_status]
+    prepared_order['status_icon'] = ORDER_STATUS_ICONS[normalized_status]
+    prepared_order['status_badge_class'] = ORDER_STATUS_BADGE_CLASSES[normalized_status]
+    prepared_order['order_date'] = _normalize_datetime(prepared_order.get('order_date'))
+
+    item_count = 0
+    for item in prepared_order.get('items', []) or []:
+        try:
+            item_count += int(item.get('quantity', 0) or 0)
+        except (TypeError, ValueError, AttributeError):
+            continue
+    prepared_order['item_count'] = item_count
+    return prepared_order
+
+
+def _sort_orders_for_display(orders):
+    prepared_orders = [_prepare_order_for_display(order) for order in (orders or [])]
+    return sorted(
+        prepared_orders,
+        key=lambda order: order.get('order_date') or datetime.min,
+        reverse=True,
+    )
+
+
+def _build_customer_order_dashboard(customers):
+    dashboard_customers = []
+    summary = {
+        "total_customers": 0,
+        "total_orders": 0,
+        "placed_orders": 0,
+        "on_the_way_orders": 0,
+        "delivered_orders": 0,
+        "cancelled_orders": 0,
+        "total_revenue": 0,
+    }
+
+    for customer in customers:
+        customer_data = dict(customer)
+        orders = _sort_orders_for_display(customer_data.get('orders', []))
+        order_counts = {status: 0 for status in ORDER_STATUS_FLOW}
+        total_spent = 0
+
+        for order in orders:
+            order_counts[order['status']] += 1
+            try:
+                total_spent += float(order.get('total_amount', 0) or 0)
+            except (TypeError, ValueError):
+                continue
+
+        customer_data['orders'] = orders
+        customer_data['order_counts'] = {
+            "all": len(orders),
+            **order_counts,
+        }
+        customer_data['total_spent'] = total_spent
+        customer_data['latest_order_at'] = orders[0].get('order_date') if orders else None
+
+        dashboard_customers.append(customer_data)
+
+        summary['total_customers'] += 1
+        summary['total_orders'] += len(orders)
+        summary['placed_orders'] += order_counts['placed']
+        summary['on_the_way_orders'] += order_counts['on_the_way']
+        summary['delivered_orders'] += order_counts['delivered']
+        summary['cancelled_orders'] += order_counts['cancelled']
+        summary['total_revenue'] += total_spent
+
+    dashboard_customers.sort(
+        key=lambda customer: (
+            customer.get('latest_order_at') is not None,
+            customer.get('latest_order_at') or datetime.min,
+            (customer.get('username') or '').lower(),
+        ),
+        reverse=True,
+    )
+
+    return dashboard_customers, summary
+
+
+@app.template_filter('datetime_display')
+def datetime_display(value):
+    display_value = _normalize_datetime(value)
+    if not display_value:
+        return 'N/A'
+    return display_value.strftime('%d %b %Y, %I:%M %p')
+
+
 def _get_smtp_config():
     """Load and normalize SMTP config from environment. Strips whitespace and optional quotes."""
     def _s(v):
@@ -308,9 +444,56 @@ def admin_dashboard():
     if current_user.role != 'admin':
         return "Access Denied", 403
     products = list(db.catalog.find())
-    # Fetch all customers with their orders
+    active_tab = request.args.get('tab', 'inventory')
+    if active_tab not in {'inventory', 'customers'}:
+        active_tab = 'inventory'
+
     customers = list(db.users.find({"role": {"$ne": "admin"}}, {"username": 1, "email": 1, "orders": 1}))
-    return render_template('admin_dashboard.html', products=products, customers=customers)
+    customers, customer_metrics = _build_customer_order_dashboard(customers)
+    status_options = [
+        {"value": status, "label": ORDER_STATUS_LABELS[status]}
+        for status in ORDER_STATUS_FLOW
+    ]
+    return render_template(
+        'admin_dashboard.html',
+        products=products,
+        customers=customers,
+        customer_metrics=customer_metrics,
+        status_options=status_options,
+        active_tab=active_tab,
+    )
+
+
+@app.route('/admin/orders/<user_id>/<order_id>/status', methods=['POST'])
+@login_required
+def update_order_status(user_id, order_id):
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+
+    new_status = _normalize_order_status(request.form.get('status'))
+
+    try:
+        result = db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {
+                "$set": {
+                    "orders.$[order].status": new_status,
+                    "orders.$[order].status_updated_at": datetime.utcnow(),
+                }
+            },
+            array_filters=[{"order._id": ObjectId(order_id)}],
+        )
+    except Exception as exc:
+        app.logger.error(f"Error updating order status: {exc}")
+        flash('Could not update that order status.', 'error')
+        return redirect(url_for('admin_dashboard', tab='customers'))
+
+    if result.modified_count:
+        flash(f"Order status updated to {ORDER_STATUS_LABELS[new_status]}.", 'success')
+    else:
+        flash('Order not found or status was already set to that value.', 'warning')
+
+    return redirect(url_for('admin_dashboard', tab='customers'))
 
 @app.route('/admin/users')
 @login_required
@@ -741,7 +924,8 @@ def complete_order():
             "order_date": datetime.utcnow(),
             "items": order_items,
             "total_amount": total_amount,
-            "status": "completed",  # Could be extended to 'shipped', 'delivered', etc.
+            "status": "placed",
+            "status_updated_at": datetime.utcnow(),
             "username": user_data.get('username'),
             "email": user_data.get('email')
         }
@@ -778,10 +962,7 @@ def order_history():
     
     try:
         user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
-        orders = user_data.get('orders', [])
-        
-        # Sort orders by date (newest first)
-        orders = sorted(orders, key=lambda x: x.get('order_date', datetime.min), reverse=True)
+        orders = _sort_orders_for_display(user_data.get('orders', []))
         
         return render_template('order_history.html', orders=orders)
     

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Inventory | Organic Pulse Collective</title>
+    <title>Admin Dashboard | Organic Pulse Collective</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,6 +12,10 @@
             --brand-green-dark: #1a4d2e;
             --brand-accent: #52b788;
             --brand-green-light: #d4edda;
+            --status-placed: #d97706;
+            --status-on-the-way: #2563eb;
+            --status-delivered: #15803d;
+            --status-cancelled: #b91c1c;
         }
         body { 
             background: linear-gradient(135deg, #f8fdf9, #e8f5e9);
@@ -155,10 +159,6 @@
             font-weight: 800;
             letter-spacing: -0.5px;
         }
-        .customer-email {
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
         .order-info-box {
             background: var(--brand-green-light);
             border: 1px solid rgba(45, 122, 74, 0.2);
@@ -179,11 +179,120 @@
             margin-top: 4px;
         }
         .badge-status {
-            background: var(--brand-accent);
             color: white;
             font-weight: 700;
             padding: 6px 12px;
             border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-placed {
+            background: var(--status-placed);
+        }
+        .status-on-the-way {
+            background: var(--status-on-the-way);
+        }
+        .status-delivered {
+            background: var(--status-delivered);
+        }
+        .status-cancelled {
+            background: var(--status-cancelled);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+        }
+        .stats-card {
+            background: white;
+            border: 1px solid rgba(45, 122, 74, 0.12);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(26, 77, 46, 0.08);
+        }
+        .stats-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--brand-green-dark);
+            opacity: 0.8;
+        }
+        .stats-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--brand-green-dark);
+            margin-top: 6px;
+        }
+        .stats-subtext {
+            color: #5f6f63;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+        .order-grid {
+            display: grid;
+            gap: 16px;
+        }
+        .order-items-list {
+            margin-top: 10px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(45, 122, 74, 0.14);
+            background: rgba(255, 255, 255, 0.75);
+        }
+        .order-item-head,
+        .order-item-row-admin {
+            display: grid;
+            grid-template-columns: minmax(180px, 2fr) 90px 120px 120px;
+            gap: 16px;
+            padding: 12px 16px;
+            color: var(--brand-green-dark);
+        }
+        .order-item-head {
+            background: rgba(45, 122, 74, 0.1);
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .order-item-row-admin {
+            border-top: 1px solid rgba(45, 122, 74, 0.12);
+            align-items: center;
+        }
+        .order-item-row-admin:last-child {
+            border-bottom: none;
+        }
+        .order-item-name {
+            font-weight: 700;
+        }
+        .order-item-brand {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.85rem;
+            color: #5f6f63;
+        }
+        .order-col-right {
+            text-align: right;
+            font-weight: 700;
+        }
+        .status-select {
+            border-radius: 10px;
+            border: 1.5px solid rgba(45, 122, 74, 0.2);
+        }
+        .empty-orders {
+            background: rgba(45, 122, 74, 0.05);
+            border-radius: 14px;
+            padding: 20px;
+            color: #5f6f63;
+        }
+        @media (max-width: 768px) {
+            .order-item-head,
+            .order-item-row-admin {
+                grid-template-columns: 1.6fr 0.8fr 1fr 1fr;
+                gap: 10px;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -202,26 +311,37 @@
     </nav>
 
     <div class="container-fluid pb-5" style="padding: 0 20px;">
-        <h1 class="dashboard-title"><i class="fas fa-chart-line"></i> Inventory</h1>
+        <h1 class="dashboard-title"><i class="fas fa-chart-line"></i> Admin Dashboard</h1>
         
         <!-- Nav tabs -->
         <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab" aria-controls="inventory" aria-selected="true">
+                <button class="nav-link {% if active_tab == 'inventory' %}active{% endif %}" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab" aria-controls="inventory" aria-selected="{{ 'true' if active_tab == 'inventory' else 'false' }}">
                     <i class="fas fa-boxes"></i> Inventory Management
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab" aria-controls="customers" aria-selected="false">
-                    <i class="fas fa-users"></i> Customer Orders
+                <button class="nav-link {% if active_tab == 'customers' %}active{% endif %}" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab" aria-controls="customers" aria-selected="{{ 'true' if active_tab == 'customers' else 'false' }}">
+                    <i class="fas fa-users"></i> Customers
                 </button>
             </li>
         </ul>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-success alert-dismissible fade show" role="alert">
+                  <i class="fas fa-check-circle"></i> {{ message }}
+                  <button type="button" class="btn-close" data-bs-close="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
         
         <!-- Tab content -->
         <div class="tab-content" id="adminTabsContent">
             <!-- Inventory Tab -->
-            <div class="tab-pane fade show active" id="inventory" role="tabpanel" aria-labelledby="inventory-tab">
+            <div class="tab-pane fade {% if active_tab == 'inventory' %}show active{% endif %}" id="inventory" role="tabpanel" aria-labelledby="inventory-tab">
                 <div class="card admin-card mb-5">
                     <div class="card-header header-bg py-4">
                         <h5 class="mb-0 fw-bold"><i class="fas fa-plus-circle"></i> Add New Product</h5>
@@ -260,17 +380,6 @@
                 </div>
 
                 <h2 class="section-title"><i class="fas fa-warehouse"></i> Current Inventory</h2>
-                
-                {% with messages = get_flashed_messages() %}
-                  {% if messages %}
-                    {% for message in messages %}
-                      <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="fas fa-check-circle"></i> {{ message }}
-                        <button type="button" class="btn-close" data-bs-close="alert" aria-label="Close"></button>
-                      </div>
-                    {% endfor %}
-                  {% endif %}
-                {% endwith %}
 
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
@@ -310,50 +419,116 @@
             </div>
             
             <!-- Customers Tab -->
-            <div class="tab-pane fade" id="customers" role="tabpanel" aria-labelledby="customers-tab">
-                <h2 class="section-title mt-4"><i class="fas fa-shopping-bag"></i> Customer Orders</h2>
+            <div class="tab-pane fade {% if active_tab == 'customers' %}show active{% endif %}" id="customers" role="tabpanel" aria-labelledby="customers-tab">
+                <h2 class="section-title mt-4"><i class="fas fa-address-book"></i> Customer Order Details</h2>
+
+                <div class="stats-grid mb-4">
+                    <div class="stats-card">
+                        <div class="stats-label">Customers</div>
+                        <div class="stats-value">{{ customer_metrics.total_customers }}</div>
+                        <div class="stats-subtext">Registered shoppers</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-label">Total Orders</div>
+                        <div class="stats-value">{{ customer_metrics.total_orders }}</div>
+                        <div class="stats-subtext">Across all customer history</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-label">On The Way</div>
+                        <div class="stats-value">{{ customer_metrics.on_the_way_orders }}</div>
+                        <div class="stats-subtext">Orders currently in transit</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-label">Delivered</div>
+                        <div class="stats-value">{{ customer_metrics.delivered_orders }}</div>
+                        <div class="stats-subtext">Successfully completed orders</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-label">Revenue</div>
+                        <div class="stats-value">₹{{ "%.0f"|format(customer_metrics.total_revenue) }}</div>
+                        <div class="stats-subtext">Lifetime order value</div>
+                    </div>
+                </div>
                 
                 {% if customers %}
                     {% for customer in customers %}
                     <div class="card admin-card mb-4">
                         <div class="customer-card-header">
-                            <div class="customer-name">👤 {{ customer.username }}</div>
-                            <div class="customer-email"><i class="fas fa-envelope"></i> {{ customer.email }}</div>
+                            <div class="customer-name"><i class="fas fa-receipt"></i> Order Details</div>
                         </div>
                         <div class="card-body p-4">
                             {% if customer.orders and customer.orders|length > 0 %}
                                 <h6 class="fw-bold mb-3"><i class="fas fa-history"></i> Order History</h6>
-                                {% for order in customer.orders %}
-                                <div class="order-info-box">
-                                    <div class="row">
-                                        <div class="col-md-3">
-                                            <div class="order-label">Order Date</div>
-                                            <div class="order-value">
-                                                {{ order.order_date.strftime('%d %b %Y, %I:%M %p') if order.order_date else 'N/A' }}
+                                <div class="order-grid">
+                                    {% for order in customer.orders %}
+                                    <div class="order-info-box">
+                                        <div class="row g-3 align-items-start">
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="order-label">Customer Name</div>
+                                                <div class="order-value fw-bold">{{ customer.username }}</div>
+                                                <div class="order-label mt-3">Order ID</div>
+                                                <div class="order-value fw-bold">#{{ order._id }}</div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="order-label">Order Date</div>
+                                                <div class="order-value">{{ order.order_date|datetime_display }}</div>
+                                                <div class="order-label mt-3">Items</div>
+                                                <div class="order-value">{{ order.item_count }} item(s)</div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="order-label">Total Amount</div>
+                                                <div class="order-value fw-bold" style="font-size: 1.2rem; color: var(--brand-accent);">₹{{ "%.0f"|format(order.total_amount) }}</div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <div class="order-label mb-2">Current Status</div>
+                                                <span class="badge-status {{ order.status_badge_class }}">
+                                                    <i class="fas {{ order.status_icon }}"></i> {{ order.status_label }}
+                                                </span>
+                                            </div>
+                                            <div class="col-12">
+                                                <form action="{{ url_for('update_order_status', user_id=customer._id, order_id=order._id) }}" method="POST" class="row g-3 align-items-end">
+                                                    <div class="col-md-8">
+                                                        <label class="form-label fw-bold">Update Delivery Status</label>
+                                                        <select name="status" class="form-select status-select">
+                                                            {% for option in status_options %}
+                                                            <option value="{{ option.value }}" {% if option.value == order.status %}selected{% endif %}>{{ option.label }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <button type="submit" class="btn btn-update w-100"><i class="fas fa-arrows-rotate"></i> Save</button>
+                                                    </div>
+                                                </form>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
-                                            <div class="order-label">Items Ordered</div>
-                                            <div class="order-value">
-                                                <ul class="list-unstyled mb-0">
-                                                    {% for item in order.get('items', []) %}
-                                                    <li><strong>{{ item.product_name }}</strong> - {{ item.quantity }} × ₹{{ item.price_per_unit }}</li>
-                                                    {% endfor %}
-                                                </ul>
+
+                                        <div class="order-label mt-4">Order Breakdown</div>
+                                        <div class="order-items-list">
+                                            <div class="order-item-head">
+                                                <span>Item Name</span>
+                                                <span class="order-col-right">Qty</span>
+                                                <span class="order-col-right">Price</span>
+                                                <span class="order-col-right">Total</span>
                                             </div>
-                                        </div>
-                                        <div class="col-md-3 text-end">
-                                            <div class="order-label">Total Amount</div>
-                                            <div class="order-value fw-bold" style="font-size: 1.2rem; color: var(--brand-accent);">
-                                                ₹{{ order.total_amount}}
+                                            {% for item in order.get('items', []) %}
+                                            <div class="order-item-row-admin">
+                                                <span>
+                                                    <span class="order-item-name">{{ item.product_name }}</span>
+                                                    {% if item.brand %}
+                                                    <span class="order-item-brand">from {{ item.brand }}</span>
+                                                    {% endif %}
+                                                </span>
+                                                <span class="order-col-right">{{ item.quantity }}</span>
+                                                <span class="order-col-right">₹{{ "%.0f"|format(item.price_per_unit) }}</span>
+                                                <span class="order-col-right">₹{{ "%.0f"|format(item.item_total) }}</span>
                                             </div>
-                                            <span class="badge-status mt-2">{{ order.status|upper }}</span>
+                                            {% endfor %}
                                         </div>
                                     </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
                             {% else %}
-                                <p class="text-muted mb-0"><i class="fas fa-info-circle"></i> No orders placed yet by this customer.</p>
+                                <div class="empty-orders mb-0"><i class="fas fa-info-circle"></i> No orders placed yet.</div>
                             {% endif %}
                         </div>
                     </div>
