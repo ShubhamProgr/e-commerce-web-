@@ -342,6 +342,39 @@ def _build_orders_dashboard():
     return active_orders, summary
 
 
+def _build_customers_info():
+    customers = list(USERS_COLLECTION.find({}, {"username": 1, "email": 1}))
+    customer_ids = [customer.get('_id') for customer in customers if customer.get('_id')]
+
+    orders_by_customer = {}
+    if customer_ids:
+        pipeline = [
+            {"$match": {"user_id": {"$in": customer_ids}}},
+            {"$group": {"_id": "$user_id", "order_count": {"$sum": 1}}},
+        ]
+        for item in ORDER_COLLECTION.aggregate(pipeline):
+            orders_by_customer[str(item.get('_id'))] = int(item.get('order_count', 0) or 0)
+
+    customer_rows = []
+    for customer in customers:
+        customer_rows.append(
+            {
+                "name": customer.get('username') or 'N/A',
+                "email": customer.get('email') or 'N/A',
+                "order_count": orders_by_customer.get(str(customer.get('_id')), 0),
+            }
+        )
+
+    customer_rows.sort(key=lambda row: (-row.get('order_count', 0), row.get('name', '').lower()))
+
+    summary = {
+        "total_customers": len(customer_rows),
+        "total_orders": sum(row.get('order_count', 0) for row in customer_rows),
+    }
+
+    return customer_rows, summary
+
+
 @app.template_filter('datetime_display')
 def datetime_display(value):
     display_value = _normalize_datetime(value)
@@ -730,6 +763,20 @@ def update_order_status(order_id):
 
     return redirect(url_for('admin_dashboard', tab='orders'))
 
+
+@app.route('/admin/customers-info')
+@login_required
+def customers_info():
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+
+    customers, customers_summary = _build_customers_info()
+    return render_template(
+        'customers_info.html',
+        customers=customers,
+        customers_summary=customers_summary,
+    )
+
 @app.route('/admin/users')
 @login_required
 def manage_users():
@@ -853,7 +900,7 @@ def verify_otp():
                 _merge_guest_cart_into_user(user_data['_id'])
             flash('Your account has been verified. Welcome to GreenFields Farm Shop!', 'success')
             if account_type == 'admin':
-                return redirect(url_for('admin_dashboard'))
+                return redirect(url_for('index'))
             return redirect(post_login_redirect)
 
         flash('Wrong OTP entered. Please try again, resend, or go back to login.', 'error')

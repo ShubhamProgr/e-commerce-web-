@@ -304,6 +304,7 @@
                 <span class="text-muted me-3" style="font-size: 0.9rem;">
                     <i class="fas fa-user"></i> {{ current_user.username }}
                 </span>
+                <a href="{{ url_for('customers_info') }}" class="btn btn-sm btn-farm-outline me-2"><i class="fas fa-users"></i> Customers Info</a>
                 <a href="/" class="btn btn-sm btn-farm-outline me-2"><i class="fas fa-home"></i> Store</a>
                 <a href="/logout" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
@@ -459,6 +460,8 @@
                                         <div class="col-lg-3 col-md-6">
                                             <div class="order-label">Order ID</div>
                                             <div class="order-value fw-bold">#{{ order._id }}</div>
+                                            <div class="order-label mt-3">Customer Name</div>
+                                            <div class="order-value fw-bold">{{ order.get('customer_name') or 'N/A' }}</div>
                                         </div>
                                         <div class="col-lg-3 col-md-6">
                                             <div class="order-label">Order Date</div>
