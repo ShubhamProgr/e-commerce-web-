@@ -1,4 +1,5 @@
 import os
+import requests
 import certifi
 import random
 import smtplib
@@ -554,47 +555,52 @@ def mask_email(email: str) -> str:
 
 def send_otp_email(to_email: str, otp_code: str) -> bool:
     """
-    Send OTP via email using SMTP credentials from .env.
-    Returns True if the email was sent successfully, False otherwise.
-    In production, set SMTP_USER and SMTP_PASSWORD (and optionally EMAIL_SENDER) in .env.
+    Send OTP via email using the Brevo REST API to bypass SMTP blocks.
     """
     if not to_email:
         return False
 
     to_email = to_email.strip().lower()
-    cfg = _get_smtp_config()
+    
+    # Get the API key from environment variables
+    api_key = os.getenv("BREVO_API_KEY")
+    sender_email = os.getenv("EMAIL_SENDER") or "noreply@organicpulse.com"
 
-    if not cfg["user"] or not cfg["password"]:
-        app.logger.warning(
-            "SMTP not configured: set SMTP_USER and SMTP_PASSWORD in .env. "
-            f"SMTP_USER set: {bool(cfg['user'])}, SMTP_PASSWORD set: {bool(cfg['password'])}, "
-            f".env path: {_env_path}. OTP for {to_email}: {otp_code}"
-        )
+    if not api_key:
+        app.logger.error("BREVO_API_KEY not found in environment variables.")
         return False
 
-    body = f"Your GreenFields Farm Shop verification code is {otp_code}. It will expire in 10 minutes."
-    msg = MIMEText(body)
-    msg["Subject"] = "Your GreenFields verification code"
-    msg["From"] = cfg["sender"] or cfg["user"]
-    msg["To"] = to_email
+    url = "https://api.brevo.com/v3/smtp/email"
+    
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+    
+    data = {
+        "sender": {
+            "name": "Organic Pulse", 
+            "email": sender_email
+        },
+        "to": [
+            {"email": to_email}
+        ],
+        "subject": "Your GreenFields verification code",
+        "htmlContent": f"<h3>Welcome to Organic Pulse</h3><p>Your verification code is <strong>{otp_code}</strong>. It will expire in 10 minutes.</p>"
+    }
 
     try:
-        with smtplib.SMTP(cfg["host"], cfg["port"], timeout=15) as server:
-            server.starttls()
-            server.login(cfg["user"], cfg["password"])
-            server.send_message(msg)
-        app.logger.info(f"OTP email sent to {to_email}")
+        # Send the POST request to Brevo's API
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status() # This will raise an error if the request fails
+        
+        app.logger.info(f"OTP email sent to {to_email} via Brevo API")
         return True
-    except smtplib.SMTPAuthenticationError as e:
-        app.logger.error(f"SMTP login failed: {e}. Check SMTP_USER and SMTP_PASSWORD (use App Password for Gmail).")
+        
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"Failed to send OTP email via API: {e}")
         return False
-    except smtplib.SMTPException as e:
-        app.logger.error(f"SMTP error sending to {to_email}: {e}")
-        return False
-    except Exception as e:
-        app.logger.exception(f"Failed to send OTP email to {to_email}: {e}")
-        return False
-
 
 # --- SESSION HELPERS ---
 @app.before_request
