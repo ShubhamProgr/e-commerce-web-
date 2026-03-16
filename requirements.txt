@@ -6,3 +6,4 @@ python-dotenv
 werkzeug
 certifi
 gunicorn
+requests
