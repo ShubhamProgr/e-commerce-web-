@@ -321,8 +321,8 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link {% if active_tab == 'customers' %}active{% endif %}" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab" aria-controls="customers" aria-selected="{{ 'true' if active_tab == 'customers' else 'false' }}">
-                    <i class="fas fa-users"></i> Customers
+                <button class="nav-link {% if active_tab == 'orders' %}active{% endif %}" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab" aria-controls="orders" aria-selected="{{ 'true' if active_tab == 'orders' else 'false' }}">
+                    <i class="fas fa-receipt"></i> Orders
                 </button>
             </li>
         </ul>
@@ -418,124 +418,111 @@
                 </div>
             </div>
             
-            <!-- Customers Tab -->
-            <div class="tab-pane fade {% if active_tab == 'customers' %}show active{% endif %}" id="customers" role="tabpanel" aria-labelledby="customers-tab">
-                <h2 class="section-title mt-4"><i class="fas fa-address-book"></i> Customer Order Details</h2>
+            <!-- Orders Tab -->
+            <div class="tab-pane fade {% if active_tab == 'orders' %}show active{% endif %}" id="orders" role="tabpanel" aria-labelledby="orders-tab">
+                <h2 class="section-title mt-4"><i class="fas fa-receipt"></i> Order Dashboard</h2>
 
                 <div class="stats-grid mb-4">
                     <div class="stats-card">
-                        <div class="stats-label">Customers</div>
-                        <div class="stats-value">{{ customer_metrics.total_customers }}</div>
-                        <div class="stats-subtext">Registered shoppers</div>
+                        <div class="stats-label">Active Orders</div>
+                        <div class="stats-value">{{ order_metrics.total_orders }}</div>
+                        <div class="stats-subtext">Placed + on-the-way only</div>
                     </div>
                     <div class="stats-card">
-                        <div class="stats-label">Total Orders</div>
-                        <div class="stats-value">{{ customer_metrics.total_orders }}</div>
-                        <div class="stats-subtext">Across all customer history</div>
+                        <div class="stats-label">Placed</div>
+                        <div class="stats-value">{{ order_metrics.placed_orders }}</div>
+                        <div class="stats-subtext">Awaiting shipment or processing</div>
                     </div>
                     <div class="stats-card">
                         <div class="stats-label">On The Way</div>
-                        <div class="stats-value">{{ customer_metrics.on_the_way_orders }}</div>
+                        <div class="stats-value">{{ order_metrics.on_the_way_orders }}</div>
                         <div class="stats-subtext">Orders currently in transit</div>
                     </div>
                     <div class="stats-card">
-                        <div class="stats-label">Delivered</div>
-                        <div class="stats-value">{{ customer_metrics.delivered_orders }}</div>
-                        <div class="stats-subtext">Successfully completed orders</div>
-                    </div>
-                    <div class="stats-card">
-                        <div class="stats-label">Revenue</div>
-                        <div class="stats-value">₹{{ "%.0f"|format(customer_metrics.total_revenue) }}</div>
-                        <div class="stats-subtext">Lifetime order value</div>
+                        <div class="stats-label">Active Revenue</div>
+                        <div class="stats-value">₹{{ "%.0f"|format(order_metrics.total_revenue) }}</div>
+                        <div class="stats-subtext">From active orders only</div>
                     </div>
                 </div>
                 
-                {% if customers %}
-                    {% for customer in customers %}
+                {% if orders %}
                     <div class="card admin-card mb-4">
                         <div class="customer-card-header">
                             <div class="customer-name"><i class="fas fa-receipt"></i> Order Details</div>
                         </div>
                         <div class="card-body p-4">
-                            {% if customer.orders and customer.orders|length > 0 %}
-                                <h6 class="fw-bold mb-3"><i class="fas fa-history"></i> Order History</h6>
-                                <div class="order-grid">
-                                    {% for order in customer.orders %}
-                                    <div class="order-info-box">
-                                        <div class="row g-3 align-items-start">
-                                            <div class="col-lg-3 col-md-6">
-                                                <div class="order-label">Customer Name</div>
-                                                <div class="order-value fw-bold">{{ customer.username }}</div>
-                                                <div class="order-label mt-3">Order ID</div>
-                                                <div class="order-value fw-bold">#{{ order._id }}</div>
-                                            </div>
-                                            <div class="col-lg-3 col-md-6">
-                                                <div class="order-label">Order Date</div>
-                                                <div class="order-value">{{ order.order_date|datetime_display }}</div>
-                                                <div class="order-label mt-3">Items</div>
-                                                <div class="order-value">{{ order.item_count }} item(s)</div>
-                                            </div>
-                                            <div class="col-lg-3 col-md-6">
-                                                <div class="order-label">Total Amount</div>
-                                                <div class="order-value fw-bold" style="font-size: 1.2rem; color: var(--brand-accent);">₹{{ "%.0f"|format(order.total_amount) }}</div>
-                                            </div>
-                                            <div class="col-lg-3 col-md-6">
-                                                <div class="order-label mb-2">Current Status</div>
-                                                <span class="badge-status {{ order.status_badge_class }}">
-                                                    <i class="fas {{ order.status_icon }}"></i> {{ order.status_label }}
-                                                </span>
-                                            </div>
-                                            <div class="col-12">
-                                                <form action="{{ url_for('update_order_status', user_id=customer._id, order_id=order._id) }}" method="POST" class="row g-3 align-items-end">
-                                                    <div class="col-md-8">
-                                                        <label class="form-label fw-bold">Update Delivery Status</label>
-                                                        <select name="status" class="form-select status-select">
-                                                            {% for option in status_options %}
-                                                            <option value="{{ option.value }}" {% if option.value == order.status %}selected{% endif %}>{{ option.label }}</option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <button type="submit" class="btn btn-update w-100"><i class="fas fa-arrows-rotate"></i> Save</button>
-                                                    </div>
-                                                </form>
-                                            </div>
+                            <h6 class="fw-bold mb-3"><i class="fas fa-history"></i> Order History</h6>
+                            <div class="order-grid">
+                                {% for order in orders %}
+                                <div class="order-info-box">
+                                    <div class="row g-3 align-items-start">
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="order-label">Order ID</div>
+                                            <div class="order-value fw-bold">#{{ order._id }}</div>
                                         </div>
-
-                                        <div class="order-label mt-4">Order Breakdown</div>
-                                        <div class="order-items-list">
-                                            <div class="order-item-head">
-                                                <span>Item Name</span>
-                                                <span class="order-col-right">Qty</span>
-                                                <span class="order-col-right">Price</span>
-                                                <span class="order-col-right">Total</span>
-                                            </div>
-                                            {% for item in order.get('items', []) %}
-                                            <div class="order-item-row-admin">
-                                                <span>
-                                                    <span class="order-item-name">{{ item.product_name }}</span>
-                                                    {% if item.brand %}
-                                                    <span class="order-item-brand">from {{ item.brand }}</span>
-                                                    {% endif %}
-                                                </span>
-                                                <span class="order-col-right">{{ item.quantity }}</span>
-                                                <span class="order-col-right">₹{{ "%.0f"|format(item.price_per_unit) }}</span>
-                                                <span class="order-col-right">₹{{ "%.0f"|format(item.item_total) }}</span>
-                                            </div>
-                                            {% endfor %}
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="order-label">Order Date</div>
+                                            <div class="order-value">{{ order.order_date|datetime_display }}</div>
+                                            <div class="order-label mt-3">Items</div>
+                                            <div class="order-value">{{ order.item_count }} item(s)</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="order-label">Total Amount</div>
+                                            <div class="order-value fw-bold" style="font-size: 1.2rem; color: var(--brand-accent);">₹{{ "%.0f"|format(order.total_amount) }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="order-label mb-2">Current Status</div>
+                                            <span class="badge-status {{ order.status_badge_class }}">
+                                                <i class="fas {{ order.status_icon }}"></i> {{ order.status_label }}
+                                            </span>
+                                        </div>
+                                        <div class="col-12">
+                                            <form action="{{ url_for('update_order_status', order_id=order._id) }}" method="POST" class="row g-3 align-items-end">
+                                                <div class="col-md-8">
+                                                    <label class="form-label fw-bold">Update Delivery Status</label>
+                                                    <select name="status" class="form-select status-select">
+                                                        {% for option in status_options %}
+                                                        <option value="{{ option.value }}" {% if option.value == order.status %}selected{% endif %}>{{ option.label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="submit" class="btn btn-update w-100"><i class="fas fa-arrows-rotate"></i> Save</button>
+                                                </div>
+                                            </form>
                                         </div>
                                     </div>
-                                    {% endfor %}
+
+                                    <div class="order-label mt-4">Order Breakdown</div>
+                                    <div class="order-items-list">
+                                        <div class="order-item-head">
+                                            <span>Item Name</span>
+                                            <span class="order-col-right">Qty</span>
+                                            <span class="order-col-right">Price</span>
+                                            <span class="order-col-right">Total</span>
+                                        </div>
+                                        {% for item in order.get('items', []) %}
+                                        <div class="order-item-row-admin">
+                                            <span>
+                                                <span class="order-item-name">{{ item.product_name }}</span>
+                                                {% if item.brand %}
+                                                <span class="order-item-brand">from {{ item.brand }}</span>
+                                                {% endif %}
+                                            </span>
+                                            <span class="order-col-right">{{ item.quantity }}</span>
+                                            <span class="order-col-right">₹{{ "%.0f"|format(item.price_per_unit) }}</span>
+                                            <span class="order-col-right">₹{{ "%.0f"|format(item.item_total) }}</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
                                 </div>
-                            {% else %}
-                                <div class="empty-orders mb-0"><i class="fas fa-info-circle"></i> No orders placed yet.</div>
-                            {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
-                    {% endfor %}
                 {% else %}
                     <div class="alert alert-info" role="alert">
-                        <i class="fas fa-info-circle"></i> No customers found.
+                        <i class="fas fa-info-circle"></i> No orders found.
                     </div>
                 {% endif %}
             </div>

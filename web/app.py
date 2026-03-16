@@ -313,11 +313,16 @@ def _get_orders_for_users(user_ids):
     return orders_by_user
 
 
-def _build_customer_order_dashboard(customers):
-    dashboard_customers = []
-    orders_by_user = _get_orders_for_users([customer.get('_id') for customer in customers])
+def _build_orders_dashboard():
+    order_docs = list(ORDER_COLLECTION.find({}))
+    status_map = _get_status_map([order.get('_id') for order in order_docs])
+    orders = _sort_orders_for_display(order_docs, status_map)
+    active_orders = [
+        order for order in orders
+        if order.get('status') in {'placed', 'on_the_way'}
+    ]
+
     summary = {
-        "total_customers": 0,
         "total_orders": 0,
         "placed_orders": 0,
         "on_the_way_orders": 0,
@@ -326,47 +331,15 @@ def _build_customer_order_dashboard(customers):
         "total_revenue": 0,
     }
 
-    for customer in customers:
-        customer_data = dict(customer)
-        orders = orders_by_user.get(str(customer_data.get('_id')), [])
-        order_counts = {status: 0 for status in ORDER_STATUS_FLOW}
-        total_spent = 0
+    for order in active_orders:
+        summary['total_orders'] += 1
+        summary[f"{order['status']}_orders"] += 1
+        try:
+            summary['total_revenue'] += float(order.get('total_amount', 0) or 0)
+        except (TypeError, ValueError):
+            continue
 
-        for order in orders:
-            order_counts[order['status']] += 1
-            try:
-                total_spent += float(order.get('total_amount', 0) or 0)
-            except (TypeError, ValueError):
-                continue
-
-        customer_data['orders'] = orders
-        customer_data['order_counts'] = {
-            "all": len(orders),
-            **order_counts,
-        }
-        customer_data['total_spent'] = total_spent
-        customer_data['latest_order_at'] = orders[0].get('order_date') if orders else None
-
-        dashboard_customers.append(customer_data)
-
-        summary['total_customers'] += 1
-        summary['total_orders'] += len(orders)
-        summary['placed_orders'] += order_counts['placed']
-        summary['on_the_way_orders'] += order_counts['on_the_way']
-        summary['delivered_orders'] += order_counts['delivered']
-        summary['cancelled_orders'] += order_counts['cancelled']
-        summary['total_revenue'] += total_spent
-
-    dashboard_customers.sort(
-        key=lambda customer: (
-            customer.get('latest_order_at') is not None,
-            customer.get('latest_order_at') or datetime.min,
-            (customer.get('username') or '').lower(),
-        ),
-        reverse=True,
-    )
-
-    return dashboard_customers, summary
+    return active_orders, summary
 
 
 @app.template_filter('datetime_display')
@@ -462,6 +435,53 @@ def _initialize_data_model():
 
 
 _initialize_data_model()
+
+
+def _current_user_object_id():
+    if not getattr(current_user, 'is_authenticated', False):
+        return None
+    raw_user_id = str(current_user.id).split(':', 1)[-1]
+    return _coerce_object_id(raw_user_id)
+
+
+def _upsert_order_status(order_id, user_id, status, updated_at=None):
+    normalized_status = _normalize_order_status(status)
+    timestamp = _normalize_datetime(updated_at) or datetime.utcnow()
+    order_object_id = _coerce_object_id(order_id)
+    user_object_id = _coerce_object_id(user_id)
+    if not order_object_id or not user_object_id:
+        return None
+
+    existing_status = STATUS_COLLECTION.find_one({"order_id": order_object_id})
+    history = []
+    if isinstance(existing_status, dict):
+        history = list(existing_status.get('history', []))
+
+    if not history or history[-1].get('status') != normalized_status:
+        history.append({"status": normalized_status, "updated_at": timestamp})
+
+    STATUS_COLLECTION.update_one(
+        {"order_id": order_object_id},
+        {
+            "$set": {
+                "user_id": user_object_id,
+                "current_status": normalized_status,
+                "updated_at": timestamp,
+                "history": history,
+            }
+        },
+        upsert=True,
+    )
+    return normalized_status
+
+
+def _get_orders_for_user(user_id):
+    user_object_id = _coerce_object_id(user_id)
+    if not user_object_id:
+        return []
+    orders = list(ORDER_COLLECTION.find({"user_id": user_object_id}))
+    status_map = _get_status_map([order.get('_id') for order in orders])
+    return _sort_orders_for_display(orders, status_map)
 
 
 def _get_smtp_config():
@@ -595,15 +615,7 @@ def login():
 
         password = password.strip()
         
-        # 1. Search for existing user
-        user_data = db.users.find_one(
-            {
-                "$or": [
-                    {"username": username},
-                    {"email": username.lower()}
-                ]
-            }
-        )
+        user_data, account_type = _find_account_by_login(username)
         
         if user_data:
             stored_password = user_data.get('password')
@@ -633,7 +645,7 @@ def login():
 
             otp_code = generate_otp_code()
             expires_at = datetime.utcnow() + timedelta(minutes=10)
-            db.users.update_one(
+            _get_account_collection(account_type).update_one(
                 {"_id": user_data['_id']},
                 {"$set": {"otp_code": otp_code, "otp_expires_at": expires_at}}
             )
@@ -643,7 +655,7 @@ def login():
             else:
                 flash('We could not send the verification email. Please try again later or contact support.', 'error')
             # propagate the redirect target through the verification step
-            return redirect(url_for('verify_otp', username=username, next=post_login_redirect))
+            return redirect(url_for('verify_otp', username=user_data.get('username'), account_type=account_type, next=post_login_redirect))
         else:
             flash('No account found with that username. Please register first.')
             return redirect(url_for('register'))
@@ -666,11 +678,10 @@ def admin_dashboard():
         return "Access Denied", 403
     products = list(db.catalog.find())
     active_tab = request.args.get('tab', 'inventory')
-    if active_tab not in {'inventory', 'customers'}:
+    if active_tab not in {'inventory', 'orders'}:
         active_tab = 'inventory'
 
-    customers = list(db.users.find({"role": {"$ne": "admin"}}, {"username": 1, "email": 1, "orders": 1}))
-    customers, customer_metrics = _build_customer_order_dashboard(customers)
+    orders, order_metrics = _build_orders_dashboard()
     status_options = [
         {"value": status, "label": ORDER_STATUS_LABELS[status]}
         for status in ORDER_STATUS_FLOW
@@ -678,58 +689,66 @@ def admin_dashboard():
     return render_template(
         'admin_dashboard.html',
         products=products,
-        customers=customers,
-        customer_metrics=customer_metrics,
+        orders=orders,
+        order_metrics=order_metrics,
         status_options=status_options,
         active_tab=active_tab,
     )
 
 
-@app.route('/admin/orders/<user_id>/<order_id>/status', methods=['POST'])
+@app.route('/admin/orders/<order_id>/status', methods=['POST'])
 @login_required
-def update_order_status(user_id, order_id):
+def update_order_status(order_id):
     if current_user.role != 'admin':
         return "Access Denied", 403
 
+    order_object_id = _coerce_object_id(order_id)
     new_status = _normalize_order_status(request.form.get('status'))
 
+    if not order_object_id:
+        flash('Invalid order reference.', 'error')
+        return redirect(url_for('admin_dashboard', tab='orders'))
+
     try:
-        result = db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {
-                "$set": {
-                    "orders.$[order].status": new_status,
-                    "orders.$[order].status_updated_at": datetime.utcnow(),
-                }
-            },
-            array_filters=[{"order._id": ObjectId(order_id)}],
-        )
+        order_exists = ORDER_COLLECTION.find_one({"_id": order_object_id}, {"_id": 1, "user_id": 1})
+        if not order_exists:
+            flash('Order not found.', 'warning')
+            return redirect(url_for('admin_dashboard', tab='orders'))
+
+        user_object_id = _coerce_object_id(order_exists.get('user_id'))
+        if not user_object_id:
+            flash('Order user reference is invalid.', 'error')
+            return redirect(url_for('admin_dashboard', tab='orders'))
+
+        _upsert_order_status(order_object_id, user_object_id, new_status, datetime.utcnow())
     except Exception as exc:
         app.logger.error(f"Error updating order status: {exc}")
         flash('Could not update that order status.', 'error')
-        return redirect(url_for('admin_dashboard', tab='customers'))
+        return redirect(url_for('admin_dashboard', tab='orders'))
 
-    if result.modified_count:
-        flash(f"Order status updated to {ORDER_STATUS_LABELS[new_status]}.", 'success')
-    else:
-        flash('Order not found or status was already set to that value.', 'warning')
+    flash(f"Order status updated to {ORDER_STATUS_LABELS[new_status]}.", 'success')
 
-    return redirect(url_for('admin_dashboard', tab='customers'))
+    return redirect(url_for('admin_dashboard', tab='orders'))
 
 @app.route('/admin/users')
 @login_required
 def manage_users():
     if current_user.role != 'admin':
         return "Access Denied", 403
-    all_users = list(db.users.find())
+    all_users = list(USERS_COLLECTION.find())
     return render_template('manage_users.html', users=all_users)
 
 @app.route('/admin/make_admin/<user_id>')
 @login_required
 def make_admin(user_id):
     if current_user.role == 'admin':
-        db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"role": "admin"}})
-        flash("User promoted to Admin")
+        user_doc = USERS_COLLECTION.find_one({"_id": _coerce_object_id(user_id)})
+        if user_doc:
+            admin_doc = dict(user_doc)
+            admin_doc['role'] = 'admin'
+            ADMIN_COLLECTION.replace_one({"_id": admin_doc['_id']}, admin_doc, upsert=True)
+            USERS_COLLECTION.delete_one({"_id": admin_doc['_id']})
+            flash("User promoted to Admin")
     return redirect(url_for('manage_users'))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -743,7 +762,8 @@ def register():
         password = request.form.get('password')
         
         # Prevent duplicate usernames
-        if db.users.find_one({"username": username}):
+        existing_user, _ = _find_account_by_username(username)
+        if existing_user:
             flash('Username already exists!')
             return redirect(url_for('register'))
 
@@ -767,16 +787,15 @@ def register():
             "username": username,
             "email": email,
             "password": generate_password_hash(password),
-            "role": "customer",
             "is_verified": False,
             "otp_code": otp_code,
             "otp_expires_at": expires_at,
-            "cart": [],  # Initialize empty cart
-            "orders": []  # Initialize empty order history
+            "cart": []
         }
-        db.users.insert_one(data)
+        USERS_COLLECTION.insert_one(data)
         flash('We have sent a verification code to your email. Enter it to activate your account.', 'success')
         args = {"username": username}
+        args["account_type"] = 'customer'
         if next_url:
             args["next"] = next_url
         return redirect(url_for('verify_otp', **args))
@@ -787,13 +806,15 @@ def register():
 @app.route('/verify-otp', methods=['GET', 'POST'])
 def verify_otp():
     username = request.args.get('username') or request.form.get('username')
+    account_type = request.args.get('account_type') or request.form.get('account_type')
     post_login_redirect = _get_post_login_redirect()
 
     if request.method == 'POST':
         otp_input = request.form.get('otp')
         username = request.form.get('username')
+        account_type = request.form.get('account_type')
 
-        user_data = db.users.find_one({"username": username})
+        user_data, account_type = _find_account_by_username(username, account_type)
         if not user_data:
             flash('User not found. Please register again.', 'error')
             return redirect(url_for('register'))
@@ -805,7 +826,7 @@ def verify_otp():
         if not stored_code or not expires_at or expires_at < now_utc:
             new_code = generate_otp_code()
             new_expires = datetime.utcnow() + timedelta(minutes=10)
-            db.users.update_one(
+            _get_account_collection(account_type).update_one(
                 {"_id": user_data['_id']},
                 {"$set": {"otp_code": new_code, "otp_expires_at": new_expires}}
             )
@@ -813,47 +834,48 @@ def verify_otp():
                 flash('Your verification code expired. We have sent a new one to your email.', 'success')
             else:
                 flash('We could not send the new code. Please check your email or try again later.', 'error')
-            args = {"username": username}
+            args = {"username": username, "account_type": account_type}
             if post_login_redirect:
                 args["next"] = post_login_redirect
             return redirect(url_for('verify_otp', **args))
 
         if str(otp_input or '').strip() == str(stored_code).strip():
-            db.users.update_one(
+            _get_account_collection(account_type).update_one(
                 {"_id": user_data['_id']},
                 {
                     "$set": {"is_verified": True},
                     "$unset": {"otp_code": "", "otp_expires_at": ""}
                 }
             )
-            user_obj = User(user_data)
+            user_obj = User(user_data, account_type)
             login_user(user_obj)
-            _merge_guest_cart_into_user(user_data['_id'])
+            if account_type == 'customer':
+                _merge_guest_cart_into_user(user_data['_id'])
             flash('Your account has been verified. Welcome to GreenFields Farm Shop!', 'success')
-            # Redirect admins to dashboard, customers to post_login_redirect
-            if user_data.get('role') == 'admin':
+            if account_type == 'admin':
                 return redirect(url_for('admin_dashboard'))
             return redirect(post_login_redirect)
 
         flash('Wrong OTP entered. Please try again, resend, or go back to login.', 'error')
         email_mask = mask_email(user_data.get('email') or '')
-        return render_template('verify_otp.html', username=username, email_mask=email_mask, next_url=post_login_redirect)
+        return render_template('verify_otp.html', username=username, account_type=account_type, email_mask=email_mask, next_url=post_login_redirect)
 
     # GET: show the verify form and display which email we're sending codes to
     email_mask = ""
     if username:
-        user_data = db.users.find_one({"username": username})
+        user_data, account_type = _find_account_by_username(username, account_type)
         if user_data and user_data.get('email'):
             email_mask = mask_email(user_data['email'])
 
-    return render_template('verify_otp.html', username=username, email_mask=email_mask, next_url=post_login_redirect)
+    return render_template('verify_otp.html', username=username, account_type=account_type, email_mask=email_mask, next_url=post_login_redirect)
 
 @app.route('/resend-otp', methods=['POST'])
 def resend_otp():
     username = request.form.get('username')
+    account_type = request.form.get('account_type')
     post_login_redirect = _get_post_login_redirect()
 
-    user_data = db.users.find_one({"username": username})
+    user_data, account_type = _find_account_by_username(username, account_type)
     if not user_data:
         flash('User not found.', 'error')
         return redirect(url_for('login'))
@@ -865,7 +887,7 @@ def resend_otp():
 
     otp_code = generate_otp_code()
     expires_at = datetime.utcnow() + timedelta(minutes=10)
-    db.users.update_one(
+    _get_account_collection(account_type).update_one(
         {"_id": user_data['_id']},
         {"$set": {"otp_code": otp_code, "otp_expires_at": expires_at}}
     )
@@ -873,7 +895,7 @@ def resend_otp():
         flash('New OTP sent to your email.', 'success')
     else:
         flash('Failed to send OTP.', 'error')
-    return redirect(url_for('verify_otp', username=username, next=post_login_redirect))
+    return redirect(url_for('verify_otp', username=username, account_type=account_type, next=post_login_redirect))
 
 @app.route('/admin/edit/<id>', methods=['POST'])
 @login_required
@@ -914,8 +936,9 @@ def add_to_cart(product_id):
     
     try:
         if current_user.is_authenticated and current_user.role == 'customer':
-            db.users.update_one(
-                {"_id": ObjectId(current_user.id)},
+            user_object_id = _current_user_object_id()
+            USERS_COLLECTION.update_one(
+                {"_id": user_object_id},
                 {"$push": {"cart": ObjectId(product_id)}}
             )
         elif current_user.is_authenticated and current_user.role != 'customer':
@@ -947,7 +970,7 @@ def view_cart():
 
     # load raw id list from either user record or session
     if current_user.is_authenticated and current_user.role == 'customer':
-        user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
+        user_data = USERS_COLLECTION.find_one({"_id": _current_user_object_id()})
         cart_ids = user_data.get('cart', [])
     else:
         cart_ids = _get_guest_cart()
@@ -983,8 +1006,8 @@ def remove_from_cart(product_id):
     try:
         # remove all occurrences (delete item completely)
         if current_user.is_authenticated and current_user.role == 'customer':
-            db.users.update_one(
-                {"_id": ObjectId(current_user.id)},
+            USERS_COLLECTION.update_one(
+                {"_id": _current_user_object_id()},
                 {"$pull": {"cart": ObjectId(product_id)}}
             )
         elif current_user.is_authenticated and current_user.role != 'customer':
@@ -1016,8 +1039,8 @@ def increment_cart(product_id):
     
     try:
         if current_user.is_authenticated and current_user.role == 'customer':
-            db.users.update_one(
-                {"_id": ObjectId(current_user.id)},
+            USERS_COLLECTION.update_one(
+                {"_id": _current_user_object_id()},
                 {"$push": {"cart": ObjectId(product_id)}}
             )
         elif not current_user.is_authenticated:
@@ -1041,14 +1064,14 @@ def decrement_cart(product_id):
     
     try:
         if current_user.is_authenticated and current_user.role == 'customer':
-            user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
+            user_data = USERS_COLLECTION.find_one({"_id": _current_user_object_id()})
             cart_list = user_data.get('cart', [])
             # remove first matching occurrence
             for idx, val in enumerate(cart_list):
                 if (isinstance(val, ObjectId) and str(val) == product_id) or (str(val) == product_id):
                     cart_list.pop(idx)
                     break
-            db.users.update_one({"_id": ObjectId(current_user.id)}, {"$set": {"cart": cart_list}})
+            USERS_COLLECTION.update_one({"_id": _current_user_object_id()}, {"$set": {"cart": cart_list}})
         elif not current_user.is_authenticated:
             guest_cart = _get_guest_cart()
             if product_id in guest_cart:
@@ -1095,7 +1118,8 @@ def complete_order():
     
     try:
         # Get user data and cart
-        user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
+        user_object_id = _current_user_object_id()
+        user_data = USERS_COLLECTION.find_one({"_id": user_object_id})
         cart_ids = user_data.get('cart', [])
         
         if not cart_ids:
@@ -1142,22 +1166,19 @@ def complete_order():
         # Create order object
         order = {
             "_id": ObjectId(),  # Unique order ID
+            "user_id": user_object_id,
+            "customer_name": user_data.get('username'),
+            "customer_email": user_data.get('email'),
             "order_date": datetime.utcnow(),
             "items": order_items,
             "total_amount": total_amount,
-            "status": "placed",
-            "status_updated_at": datetime.utcnow(),
-            "username": user_data.get('username'),
-            "email": user_data.get('email')
         }
         
-        # Save order to user's orders array
-        db.users.update_one(
-            {"_id": ObjectId(current_user.id)},
-            {
-                "$push": {"orders": order},
-                "$set": {"cart": []}  # Clear the cart
-            }
+        ORDER_COLLECTION.insert_one(order)
+        _upsert_order_status(order['_id'], user_object_id, 'placed', order['order_date'])
+        USERS_COLLECTION.update_one(
+            {"_id": user_object_id},
+            {"$set": {"cart": []}}
         )
         
         flash(f'Order placed successfully! Order ID: {str(order["_id"])}', 'success')
@@ -1182,8 +1203,7 @@ def order_history():
         return redirect(url_for('index'))
     
     try:
-        user_data = db.users.find_one({"_id": ObjectId(current_user.id)})
-        orders = _sort_orders_for_display(user_data.get('orders', []))
+        orders = _get_orders_for_user(_current_user_object_id())
         
         return render_template('order_history.html', orders=orders)
     

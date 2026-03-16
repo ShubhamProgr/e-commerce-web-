@@ -139,6 +139,8 @@
 
         <form method="POST">
             <input type="hidden" name="username" value="{{ username }}">
+            <input type="hidden" name="account_type" value="{{ account_type or 'customer' }}">
+            <input type="hidden" name="next" value="{{ next_url or '' }}">
             
             <div class="mb-3">
                 <label for="otp" class="form-label">Verification Code</label>
@@ -150,6 +152,8 @@
 
         <form method="POST" action="{{ url_for('resend_otp') }}" style="margin-top: 15px;">
             <input type="hidden" name="username" value="{{ username }}">
+            <input type="hidden" name="account_type" value="{{ account_type or 'customer' }}">
+            <input type="hidden" name="next" value="{{ next_url or '' }}">
             <button type="submit" class="btn btn-outline-success w-100 btn-resend">
                 <i class="fas fa-redo"></i> Resend Code
             </button>
