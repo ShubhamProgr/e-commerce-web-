@@ -555,24 +555,15 @@ def mask_email(email: str) -> str:
 
 
 def send_otp_email(to_email: str, otp_code: str) -> bool:
-    """
-    Send OTP via email using the Brevo REST API to bypass SMTP blocks.
-    """
-    if not to_email:
-        return False
-
-    to_email = to_email.strip().lower()
-    
-    # Get the API key from environment variables
     api_key = os.getenv("BREVO_API_KEY")
-    sender_email = os.getenv("EMAIL_SENDER") or "noreply@organicpulse.com"
+    # This MUST be an email verified in your Brevo dashboard
+    sender_email = os.getenv("EMAIL_SENDER") or "your-verified-email@example.com"
 
     if not api_key:
-        app.logger.error("BREVO_API_KEY not found in environment variables.")
+        app.logger.error("BREVO_API_KEY not found in environment.")
         return False
 
     url = "https://api.brevo.com/v3/smtp/email"
-    
     headers = {
         "accept": "application/json",
         "api-key": api_key,
@@ -580,27 +571,18 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
     }
     
     data = {
-        "sender": {
-            "name": "Organic Pulse", 
-            "email": sender_email
-        },
-        "to": [
-            {"email": to_email}
-        ],
-        "subject": "Your GreenFields verification code",
-        "htmlContent": f"<h3>Welcome to Organic Pulse</h3><p>Your verification code is <strong>{otp_code}</strong>. It will expire in 10 minutes.</p>"
+        "sender": {"name": "Organic Pulse", "email": sender_email},
+        "to": [{"email": to_email.strip().lower()}],
+        "subject": "Your QuickStore Verification Code",
+        "htmlContent": f"<h3>Welcome!</h3><p>Your code is: <strong>{otp_code}</strong></p>"
     }
 
     try:
-        # Send the POST request to Brevo's API
         response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status() # This will raise an error if the request fails
-        
-        app.logger.info(f"OTP email sent to {to_email} via Brevo API")
+        response.raise_for_status() 
         return True
-        
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Failed to send OTP email via API: {e}")
+        app.logger.error(f"Brevo API Error: {e}")
         return False
 
 # --- SESSION HELPERS ---

@@ -1,8 +1,8 @@
 Flask
 flask-login
+requests
 pymongo
 dnspython
-requests
 python-dotenv
 werkzeug
 certifi
