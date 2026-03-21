@@ -2,8 +2,8 @@ Flask
 flask-login
 pymongo
 dnspython
+requests
 python-dotenv
 werkzeug
 certifi
 gunicorn
-requests
