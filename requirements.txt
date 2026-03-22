@@ -1,6 +1,7 @@
 Flask
 flask-login
 requests
+resend 
 pymongo
 dnspython
 python-dotenv
