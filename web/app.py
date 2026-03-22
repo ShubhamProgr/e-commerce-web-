@@ -554,36 +554,136 @@ def mask_email(email: str) -> str:
     return f"{masked_local}@{domain}"
 
 
-def send_otp_email(to_email: str, otp_code: str) -> bool:
-    api_key = os.getenv("BREVO_API_KEY")
-    # This MUST be an email verified in your Brevo dashboard
-    sender_email = os.getenv("EMAIL_SENDER") or "your-verified-email@example.com"
+def _sanitize_env_value(value):
+    if value is None:
+        return None
+    cleaned = str(value).strip().strip('"').strip("'")
+    return cleaned if cleaned else None
+
+
+def _get_resend_config():
+    sender_email = (
+        _sanitize_env_value(os.getenv("RESEND_FROM_EMAIL"))
+        or _sanitize_env_value(os.getenv("EMAIL_SENDER"))
+        or _sanitize_env_value(os.getenv("SMTP_USER"))
+    )
+    sender_name = _sanitize_env_value(os.getenv("RESEND_FROM_NAME")) or "Organic Pulse"
+
+    from_field = sender_email
+    if sender_email and sender_name:
+        from_field = f"{sender_name} <{sender_email}>"
+
+    return {
+        "api_key": _sanitize_env_value(os.getenv("RESEND_API_KEY")),
+        "sender_email": sender_email,
+        "sender_name": sender_name,
+        "from_field": from_field,
+    }
+
+
+def _send_otp_via_resend(to_email: str, otp_code: str) -> bool:
+    config = _get_resend_config()
+    api_key = config["api_key"]
+    sender_email = config["sender_email"]
+    recipient_email = (to_email or "").strip().lower()
 
     if not api_key:
-        app.logger.error("BREVO_API_KEY not found in environment.")
+        app.logger.warning("RESEND_API_KEY not found in environment. Skipping Resend.")
         return False
 
-    url = "https://api.brevo.com/v3/smtp/email"
+    # Resend requires a verified sender email/domain.
+    if not sender_email or "@" not in sender_email:
+        app.logger.warning(
+            "Resend sender email is missing or invalid. Set RESEND_FROM_EMAIL or EMAIL_SENDER to a verified sender."
+        )
+        return False
+
+    if not recipient_email or "@" not in recipient_email:
+        app.logger.error("Recipient email is missing or invalid for OTP send.")
+        return False
+
+    url = "https://api.resend.com/emails"
     headers = {
         "accept": "application/json",
-        "api-key": api_key,
+        "Authorization": f"Bearer {api_key}",
         "content-type": "application/json"
     }
     
     data = {
-        "sender": {"name": "Organic Pulse", "email": sender_email},
-        "to": [{"email": to_email.strip().lower()}],
+        "from": config["from_field"],
+        "to": [recipient_email],
         "subject": "Your QuickStore Verification Code",
-        "htmlContent": f"<h3>Welcome!</h3><p>Your code is: <strong>{otp_code}</strong></p>"
+        "html": f"<h3>Welcome!</h3><p>Your code is: <strong>{otp_code}</strong></p>"
     }
 
     try:
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status() 
+        response = requests.post(url, headers=headers, json=data, timeout=15)
+        app.logger.info("Resend API response status=%s", response.status_code)
+        response.raise_for_status()
         return True
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Brevo API Error: {e}")
+        body = ""
+        try:
+            body = response.text[:800]  # type: ignore[name-defined]
+        except Exception:
+            body = ""
+        app.logger.error("Failed to send OTP email via Resend: %s | body=%s", e, body)
         return False
+
+
+def _send_otp_via_smtp(to_email: str, otp_code: str) -> bool:
+    smtp = _get_smtp_config()
+    recipient_email = (to_email or "").strip().lower()
+
+    if not recipient_email or "@" not in recipient_email:
+        app.logger.error("Recipient email is missing or invalid for SMTP OTP send.")
+        return False
+
+    required = [smtp.get("host"), smtp.get("port"), smtp.get("user"), smtp.get("password"), smtp.get("sender")]
+    if not all(required):
+        app.logger.error("SMTP settings are incomplete. Check SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASSWORD/EMAIL_SENDER.")
+        return False
+
+    msg = MIMEText(
+        f"Welcome!\n\nYour verification code is: {otp_code}\n\nThis code expires in 10 minutes.",
+        "plain",
+        "utf-8"
+    )
+    msg["Subject"] = "Your QuickStore Verification Code"
+    msg["From"] = smtp["sender"]
+    msg["To"] = recipient_email
+
+    try:
+        port = int(smtp["port"])
+        host = smtp["host"]
+        user = smtp["user"]
+        password = smtp["password"]
+
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port, timeout=20) as server:
+                server.login(user, password)
+                server.sendmail(smtp["sender"], [recipient_email], msg.as_string())
+        else:
+            with smtplib.SMTP(host, port, timeout=20) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(user, password)
+                server.sendmail(smtp["sender"], [recipient_email], msg.as_string())
+
+        app.logger.info("OTP email sent via SMTP to %s", recipient_email)
+        return True
+    except Exception as e:
+        app.logger.error("Failed to send OTP email via SMTP: %s", e)
+        return False
+
+
+def send_otp_email(to_email: str, otp_code: str) -> bool:
+    if _send_otp_via_resend(to_email, otp_code):
+        return True
+
+    app.logger.info("Falling back to SMTP for OTP email delivery.")
+    return _send_otp_via_smtp(to_email, otp_code)
 
 # --- SESSION HELPERS ---
 @app.before_request
@@ -691,6 +791,63 @@ def logout():
     session.pop('guest_cart', None)
     logout_user()
     return redirect(url_for('index'))
+
+# --- DIAGNOSTIC ROUTES (for debugging email config) ---
+@app.route('/debug/resend-test', methods=['GET', 'POST'])
+@app.route('/debug/email-test', methods=['GET', 'POST'])
+def debug_resend_test():
+    """Diagnostic endpoint: Test Resend config without authentication.
+    
+    GET: Show config status (API key length, sender email, etc.)
+    POST: Send test email to verify Resend connectivity
+    """
+    config = _get_resend_config()
+    result = {
+        "api_key_set": bool(config["api_key"]),
+        "api_key_length": len(config["api_key"]) if config["api_key"] else 0,
+        "sender_email": config["sender_email"],
+        "sender_name": config["sender_name"],
+        "has_valid_sender": bool(config["sender_email"] and "@" in config["sender_email"]),
+    }
+
+    if request.method == 'POST':
+        test_email = (request.form.get('test_email') or '').strip().lower()
+        test_code = "123456"
+        
+        if not test_email or '@' not in test_email:
+            result["error"] = "Invalid test email provided"
+            return jsonify(result), 400
+
+        # Attempt send and capture details
+        try:
+            url = "https://api.resend.com/emails"
+            headers = {
+                "accept": "application/json",
+                "Authorization": f"Bearer {config['api_key']}",
+                "content-type": "application/json"
+            }
+            data = {
+                "from": config["from_field"],
+                "to": [test_email],
+                "subject": "Test OTP from Organic Pulse",
+                "html": f"<h3>Test Email</h3><p>Test code: <strong>{test_code}</strong></p>"
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=15)
+            
+            result["request_sent"] = True
+            result["status_code"] = response.status_code
+            result["success"] = 200 <= response.status_code < 300
+            
+            if not result["success"]:
+                result["error_response"] = response.text[:500]
+            else:
+                result["message"] = "Test email sent successfully"
+                
+        except Exception as e:
+            result["request_sent"] = False
+            result["error"] = str(e)
+
+    return jsonify(result)
 
 # --- ADMIN ROUTES ---
 @app.route('/admin/dashboard')
