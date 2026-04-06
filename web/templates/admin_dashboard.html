@@ -1,537 +1,324 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Dashboard | Organic Pulse Collective</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --brand-green: #2d7a4a;
-            --brand-green-dark: #1a4d2e;
-            --brand-accent: #52b788;
-            --brand-green-light: #d4edda;
-            --status-placed: #d97706;
-            --status-on-the-way: #2563eb;
-            --status-delivered: #15803d;
-            --status-cancelled: #b91c1c;
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard | Mota Anaj{% endblock %}
+
+{% block extra_head %}
+<style>
+    .admin-topbar {
+        background: #fff;
+        border: 1px solid rgba(33, 73, 51, 0.14);
+        border-radius: 16px;
+        padding: 0.8rem 1rem;
+        box-shadow: 0 10px 24px rgba(24, 49, 34, 0.08);
+        margin-bottom: 1rem;
+    }
+
+    .admin-title {
+        margin: 0;
+        font-family: 'Fraunces', serif;
+        color: #1f3a2b;
+    }
+
+    .admin-btn {
+        border-radius: 10px;
+        border: 1px solid rgba(33, 73, 51, 0.25);
+        color: #1f3a2b;
+        text-decoration: none;
+        padding: 0.46rem 0.72rem;
+        font-weight: 700;
+        display: inline-block;
+        background: #fff;
+    }
+
+    .tab-shell {
+        border: 1px solid rgba(33, 73, 51, 0.14);
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 14px 28px rgba(24, 49, 34, 0.09);
+        overflow: hidden;
+    }
+
+    .tab-head {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.8rem;
+        border-bottom: 1px solid rgba(33, 73, 51, 0.12);
+        background: #f7faf4;
+    }
+
+    .tab-link {
+        text-decoration: none;
+        font-weight: 800;
+        border-radius: 999px;
+        padding: 0.42rem 0.85rem;
+        color: #22412f;
+        background: transparent;
+    }
+
+    .tab-link.active {
+        color: #fff;
+        background: linear-gradient(140deg, #2b6745, #4fa572);
+    }
+
+    .tab-content-wrap {
+        padding: 1rem;
+    }
+
+    .section-title {
+        margin: 0 0 0.8rem;
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #1f3a2b;
+    }
+
+    .card-soft {
+        border: 1px solid rgba(33, 73, 51, 0.12);
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 10px 22px rgba(24, 49, 34, 0.07);
+    }
+
+    .form-input,
+    .form-select {
+        border-radius: 10px;
+        border: 1px solid rgba(33, 73, 51, 0.22);
+    }
+
+    .btn-primary-admin,
+    .btn-update {
+        border: 0;
+        border-radius: 10px;
+        background: linear-gradient(140deg, #2b6745, #4fa572);
+        color: #fff;
+        font-weight: 800;
+        padding: 0.48rem 0.82rem;
+    }
+
+    .table-wrap {
+        overflow: auto;
+    }
+
+    .table thead th {
+        font-size: 0.84rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #264934;
+        background: #edf5e6;
+        border: 0;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0.7rem;
+        margin-bottom: 1rem;
+    }
+
+    .stats-card {
+        border: 1px solid rgba(33, 73, 51, 0.12);
+        border-radius: 12px;
+        background: #f7faf4;
+        padding: 0.72rem;
+    }
+
+    .stats-label {
+        color: #536356;
+        text-transform: uppercase;
+        font-size: 0.73rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+    }
+
+    .stats-value {
+        color: #214933;
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+
+    .order-card {
+        border: 1px solid rgba(33, 73, 51, 0.14);
+        border-radius: 14px;
+        padding: 0.8rem;
+        margin-bottom: 0.8rem;
+        background: #fff;
+    }
+
+    .order-card-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.65rem;
+    }
+
+    .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #fff;
+        border-radius: 999px;
+        padding: 0.22rem 0.58rem;
+        font-weight: 800;
+        font-size: 0.72rem;
+    }
+
+    .status-placed { background: #c77815; }
+    .status-on-the-way { background: #2d63cf; }
+    .status-delivered { background: #22884a; }
+    .status-cancelled { background: #b63a35; }
+
+    .order-items {
+        border: 1px solid rgba(33, 73, 51, 0.12);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 0.65rem;
+    }
+
+    .order-row {
+        display: grid;
+        grid-template-columns: 1fr 80px 90px 100px;
+        gap: 0.5rem;
+        padding: 0.52rem 0.62rem;
+        align-items: center;
+        border-top: 1px solid rgba(33, 73, 51, 0.1);
+    }
+
+    .order-row:first-child {
+        border-top: 0;
+        background: #edf5e6;
+        font-weight: 800;
+        color: #214933;
+    }
+
+    .cell-right {
+        text-align: right;
+   }
+
+    @media (max-width: 840px) {
+        .order-row {
+            grid-template-columns: 1fr;
         }
-        body { 
-            background: linear-gradient(135deg, #f8fdf9, #e8f5e9);
-            font-family: 'Outfit', sans-serif;
+        .cell-right {
+            text-align: left;
         }
-        .admin-card { 
-            border-radius: 16px; 
-            border: 1px solid rgba(45, 122, 74, 0.1);
-            box-shadow: 0 4px 12px rgba(26, 77, 46, 0.08);
-            transition: all 0.3s ease;
-        }
-        .admin-card:hover {
-            box-shadow: 0 8px 20px rgba(26, 77, 46, 0.12);
-        }
-        .header-bg { 
-            background: linear-gradient(135deg, var(--brand-green), var(--brand-accent)); 
-            color: white;
-        }
-        .badge-category { 
-            background-color: var(--brand-green-light); 
-            color: var(--brand-green-dark);
-            border: 1px solid rgba(45, 122, 74, 0.2);
-            font-weight: 600;
-        }
-        .btn-farm-outline { 
-            border-color: var(--brand-green);
-            color: var(--brand-green-dark); 
-            background-color: #ffffff;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .btn-farm-outline:hover { 
-            border-color: var(--brand-green-dark); 
-            color: white;
-            background-color: var(--brand-green);
-        }
-        .navbar-admin {
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 2px 12px rgba(26, 77, 46, 0.08);
-            border-bottom: 1px solid rgba(45, 122, 74, 0.1);
-        }
-        .navbar-brand-admin {
-            font-weight: 800;
-            font-size: 1.2rem;
-            color: var(--brand-green-dark) !important;
-            letter-spacing: 1px;
-        }
-        .form-control {
-            border: 1.5px solid #ddd;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-        .form-control:focus {
-            border-color: var(--brand-green);
-            box-shadow: 0 0 0 2px rgba(45, 122, 74, 0.15);
-        }
-        .btn-add {
-            background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            transition: all 0.3s ease;
-        }
-        .btn-add:hover {
-            background: linear-gradient(135deg, var(--brand-green-dark), var(--brand-green));
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(26, 77, 46, 0.25);
-        }
-        .btn-update {
-            background: var(--brand-green);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .btn-update:hover {
-            background: var(--brand-green-dark);
-            transform: translateY(-2px);
-        }
-        .table {
-            background: white;
-            border-radius: 14px;
-            overflow: hidden;
-        }
-        .table thead th {
-            background: var(--brand-green-light);
-            color: var(--brand-green-dark);
-            font-weight: 700;
-            border: none;
-        }
-        .table-hover tbody tr:hover {
-            background-color: rgba(45, 122, 74, 0.05);
-        }
-        .nav-tabs {
-            border-bottom: 2px solid rgba(45, 122, 74, 0.2);
-        }
-        .nav-tabs .nav-link {
-            color: var(--text-light);
-            border: none;
-            border-bottom: 3px solid transparent;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .nav-tabs .nav-link:hover {
-            color: var(--brand-green-dark);
-        }
-        .nav-tabs .nav-link.active {
-            background: none;
-            color: var(--brand-green-dark);
-            border-bottom-color: var(--brand-green);
-        }
-        .dashboard-title {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--brand-green-dark);
-            margin-bottom: 30px;
-            letter-spacing: -0.5px;
-        }
-        .section-title {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--brand-green-dark);
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .order-item {
-            display: flex;
-            gap: 2px;
-            align-items: center;
-        }
-        .customer-card-header {
-            background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
-            padding: 18px 20px;
-            color: white;
-        }
-        .customer-name {
-            font-size: 1.1rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-        .order-info-box {
-            background: var(--brand-green-light);
-            border: 1px solid rgba(45, 122, 74, 0.2);
-            border-left: 4px solid var(--brand-green);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        .order-label {
-            font-weight: 700;
-            color: var(--brand-green-dark);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        .order-value {
-            color: var(--brand-green-dark);
-            margin-top: 4px;
-        }
-        .badge-status {
-            color: white;
-            font-weight: 700;
-            padding: 6px 12px;
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .status-placed {
-            background: var(--status-placed);
-        }
-        .status-on-the-way {
-            background: var(--status-on-the-way);
-        }
-        .status-delivered {
-            background: var(--status-delivered);
-        }
-        .status-cancelled {
-            background: var(--status-cancelled);
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 18px;
-        }
-        .stats-card {
-            background: white;
-            border: 1px solid rgba(45, 122, 74, 0.12);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(26, 77, 46, 0.08);
-        }
-        .stats-label {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            color: var(--brand-green-dark);
-            opacity: 0.8;
-        }
-        .stats-value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--brand-green-dark);
-            margin-top: 6px;
-        }
-        .stats-subtext {
-            color: #5f6f63;
-            font-size: 0.9rem;
-            margin-top: 4px;
-        }
-        .order-grid {
-            display: grid;
-            gap: 16px;
-        }
-        .order-items-list {
-            margin-top: 10px;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(45, 122, 74, 0.14);
-            background: rgba(255, 255, 255, 0.75);
-        }
-        .order-item-head,
-        .order-item-row-admin {
-            display: grid;
-            grid-template-columns: minmax(180px, 2fr) 90px 120px 120px;
-            gap: 16px;
-            padding: 12px 16px;
-            color: var(--brand-green-dark);
-        }
-        .order-item-head {
-            background: rgba(45, 122, 74, 0.1);
-            font-size: 0.82rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        .order-item-row-admin {
-            border-top: 1px solid rgba(45, 122, 74, 0.12);
-            align-items: center;
-        }
-        .order-item-row-admin:last-child {
-            border-bottom: none;
-        }
-        .order-item-name {
-            font-weight: 700;
-        }
-        .order-item-brand {
-            display: block;
-            margin-top: 4px;
-            font-size: 0.85rem;
-            color: #5f6f63;
-        }
-        .order-col-right {
-            text-align: right;
-            font-weight: 700;
-        }
-        .status-select {
-            border-radius: 10px;
-            border: 1.5px solid rgba(45, 122, 74, 0.2);
-        }
-        .empty-orders {
-            background: rgba(45, 122, 74, 0.05);
-            border-radius: 14px;
-            padding: 20px;
-            color: #5f6f63;
-        }
-        @media (max-width: 768px) {
-            .order-item-head,
-            .order-item-row-admin {
-                grid-template-columns: 1.6fr 0.8fr 1fr 1fr;
-                gap: 10px;
-                font-size: 0.9rem;
-            }
-        }
-    </style>
-</head>
-<body class="bg-transparent">
-    <nav class="navbar navbar-admin mb-4">
-        <div class="container-fluid">
-            <span class="navbar-brand-admin"><i class="fas fa-leaf"></i> ORGANIC PULSE ADMIN</span>
-            <div class="ms-auto">
-                <span class="text-muted me-3" style="font-size: 0.9rem;">
-                    <i class="fas fa-user"></i> {{ current_user.username }}
-                </span>
-                <a href="{{ url_for('customers_info') }}" class="btn btn-sm btn-farm-outline me-2"><i class="fas fa-users"></i> Customers Info</a>
-                <a href="/" class="btn btn-sm btn-farm-outline me-2"><i class="fas fa-home"></i> Store</a>
-                <a href="/logout" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            </div>
-        </div>
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="admin-topbar d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h1 class="admin-title">Mota Anaj Admin</h1>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="admin-btn" href="{{ url_for('customers_info') }}">Customers</a>
+        <a class="admin-btn" href="{{ url_for('index') }}">View Store</a>
+    </div>
+</section>
+
+<section class="tab-shell">
+    <nav class="tab-head">
+        <a class="tab-link {% if active_tab == 'inventory' %}active{% endif %}" href="{{ url_for('admin_dashboard', tab='inventory') }}">Inventory</a>
+        <a class="tab-link {% if active_tab == 'orders' %}active{% endif %}" href="{{ url_for('admin_dashboard', tab='orders') }}">Orders</a>
     </nav>
 
-    <div class="container-fluid pb-5" style="padding: 0 20px;">
-        <h1 class="dashboard-title"><i class="fas fa-chart-line"></i> Admin Dashboard</h1>
-        
-        <!-- Nav tabs -->
-        <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link {% if active_tab == 'inventory' %}active{% endif %}" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab" aria-controls="inventory" aria-selected="{{ 'true' if active_tab == 'inventory' else 'false' }}">
-                    <i class="fas fa-boxes"></i> Inventory Management
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link {% if active_tab == 'orders' %}active{% endif %}" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab" aria-controls="orders" aria-selected="{{ 'true' if active_tab == 'orders' else 'false' }}">
-                    <i class="fas fa-receipt"></i> Orders
-                </button>
-            </li>
-        </ul>
-
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-success alert-dismissible fade show" role="alert">
-                  <i class="fas fa-check-circle"></i> {{ message }}
-                  <button type="button" class="btn-close" data-bs-close="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-        
-        <!-- Tab content -->
-        <div class="tab-content" id="adminTabsContent">
-            <!-- Inventory Tab -->
-            <div class="tab-pane fade {% if active_tab == 'inventory' %}show active{% endif %}" id="inventory" role="tabpanel" aria-labelledby="inventory-tab">
-                <div class="card admin-card mb-5">
-                    <div class="card-header header-bg py-4">
-                        <h5 class="mb-0 fw-bold"><i class="fas fa-plus-circle"></i> Add New Product</h5>
-                    </div>
-                    <div class="card-body p-4">
-                        <form action="/admin/add-product" method="POST" class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Product Name</label>
-                                <input type="text" name="item" class="form-control" placeholder="e.g. Moong Dal, Chickpeas" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Farm/Brand</label>
-                                <input type="text" name="brand" class="form-control" placeholder="e.g. Organic Farms India" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Category</label>
-                                <input type="text" name="category" class="form-control" placeholder="e.g. Pulses / Legumes" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Price (₹)</label>
-                                <input type="number" name="price" class="form-control" placeholder="0" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold">Stock Quantity</label>
-                                <input type="number" name="stock" class="form-control" placeholder="0" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Image URL</label>
-                                <input type="url" name="image" class="form-control" placeholder="https://...">
-                            </div>
-                            <div class="col-12 text-end">
-                                <button type="submit" class="btn btn-add px-5"><i class="fas fa-save"></i> Add Product</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <h2 class="section-title"><i class="fas fa-warehouse"></i> Current Inventory</h2>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th><i class="fas fa-tag"></i> Product</th>
-                                <th>Category</th>
-                                <th><i class="fas fa-rupee-sign"></i> Price</th>
-                                <th><i class="fas fa-cubes"></i> Stock</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for product in products %}
-                            <tr>
-                                <form action="/admin/edit/{{ product._id }}" method="POST" class="w-100">
-                                    <td><strong>{{ product.item }}</strong></td>
-                                    <td><span class="badge badge-category">{{ product.category }}</span></td>
-                                    <td>
-                                        <div class="input-group" style="width: 120px;">
-                                            <span class="input-group-text">₹</span>
-                                            <input type="number" name="price" class="form-control form-control-sm" value="{{ product.price }}" required>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="stock" class="form-control form-control-sm" value="{{ product.stock }}" style="width: 100px;" required>
-                                    </td>
-                                    <td class="text-end">
-                                        <button type="submit" class="btn btn-update btn-sm"><i class="fas fa-refresh"></i> Update</button>
-                                    </td>
-                                </form>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <div class="tab-content-wrap">
+        {% if active_tab == 'inventory' %}
+            <div class="card-soft p-3 mb-3">
+                <h2 class="section-title">Add New Product</h2>
+                <form action="{{ url_for('add_product') }}" method="POST" class="row g-2">
+                    <div class="col-md-4"><input class="form-control form-input" type="text" name="item" placeholder="Product name" required></div>
+                    <div class="col-md-4"><input class="form-control form-input" type="text" name="brand" placeholder="Brand/Farm" required></div>
+                    <div class="col-md-4"><input class="form-control form-input" type="text" name="category" placeholder="Category" required></div>
+                    <div class="col-md-3"><input class="form-control form-input" type="number" name="price" placeholder="Price" required></div>
+                    <div class="col-md-3"><input class="form-control form-input" type="number" name="stock" placeholder="Stock" required></div>
+                    <div class="col-md-6"><input class="form-control form-input" type="url" name="image" placeholder="Image URL (optional)"></div>
+                    <div class="col-12 text-end"><button class="btn-primary-admin" type="submit">Add Product</button></div>
+                </form>
             </div>
-            
-            <!-- Orders Tab -->
-            <div class="tab-pane fade {% if active_tab == 'orders' %}show active{% endif %}" id="orders" role="tabpanel" aria-labelledby="orders-tab">
-                <h2 class="section-title mt-4"><i class="fas fa-receipt"></i> Order Dashboard</h2>
 
-                <div class="stats-grid mb-4">
-                    <div class="stats-card">
-                        <div class="stats-label">Active Orders</div>
-                        <div class="stats-value">{{ order_metrics.total_orders }}</div>
-                        <div class="stats-subtext">Placed + on-the-way only</div>
-                    </div>
-                    <div class="stats-card">
-                        <div class="stats-label">Placed</div>
-                        <div class="stats-value">{{ order_metrics.placed_orders }}</div>
-                        <div class="stats-subtext">Awaiting shipment or processing</div>
-                    </div>
-                    <div class="stats-card">
-                        <div class="stats-label">On The Way</div>
-                        <div class="stats-value">{{ order_metrics.on_the_way_orders }}</div>
-                        <div class="stats-subtext">Orders currently in transit</div>
-                    </div>
-                    <div class="stats-card">
-                        <div class="stats-label">Active Revenue</div>
-                        <div class="stats-value">₹{{ "%.0f"|format(order_metrics.total_revenue) }}</div>
-                        <div class="stats-subtext">From active orders only</div>
-                    </div>
-                </div>
-                
-                {% if orders %}
-                    <div class="card admin-card mb-4">
-                        <div class="customer-card-header">
-                            <div class="customer-name"><i class="fas fa-receipt"></i> Order Details</div>
+            <h2 class="section-title">Current Inventory</h2>
+            <div class="table-wrap card-soft p-2">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <form action="{{ url_for('edit_product', id=product._id) }}" method="POST">
+                                <td>{{ product.item }}</td>
+                                <td>{{ product.category }}</td>
+                                <td><input class="form-control form-input form-control-sm" style="max-width:100px;" type="number" name="price" value="{{ product.price }}" required></td>
+                                <td><input class="form-control form-input form-control-sm" style="max-width:90px;" type="number" name="stock" value="{{ product.stock }}" required></td>
+                                <td class="text-end"><button class="btn-update" type="submit">Update</button></td>
+                            </form>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="stats-grid">
+                <div class="stats-card"><div class="stats-label">Active Orders</div><div class="stats-value">{{ order_metrics.total_orders }}</div></div>
+                <div class="stats-card"><div class="stats-label">Placed</div><div class="stats-value">{{ order_metrics.placed_orders }}</div></div>
+                <div class="stats-card"><div class="stats-label">On The Way</div><div class="stats-value">{{ order_metrics.on_the_way_orders }}</div></div>
+                <div class="stats-card"><div class="stats-label">Revenue</div><div class="stats-value">₹{{ "%.0f"|format(order_metrics.total_revenue) }}</div></div>
+            </div>
+
+            {% if orders %}
+                {% for order in orders %}
+                <article class="order-card">
+                    <div class="order-card-head">
+                        <div>
+                            <div class="fw-bold">Order #{{ order._id }}</div>
+                            <small class="text-muted">{{ order.get('customer_name') or 'N/A' }} · {{ order.order_date|datetime_display }}</small>
                         </div>
-                        <div class="card-body p-4">
-                            <h6 class="fw-bold mb-3"><i class="fas fa-history"></i> Order History</h6>
-                            <div class="order-grid">
-                                {% for order in orders %}
-                                <div class="order-info-box">
-                                    <div class="row g-3 align-items-start">
-                                        <div class="col-lg-3 col-md-6">
-                                            <div class="order-label">Order ID</div>
-                                            <div class="order-value fw-bold">#{{ order._id }}</div>
-                                            <div class="order-label mt-3">Customer Name</div>
-                                            <div class="order-value fw-bold">{{ order.get('customer_name') or 'N/A' }}</div>
-                                        </div>
-                                        <div class="col-lg-3 col-md-6">
-                                            <div class="order-label">Order Date</div>
-                                            <div class="order-value">{{ order.order_date|datetime_display }}</div>
-                                            <div class="order-label mt-3">Items</div>
-                                            <div class="order-value">{{ order.item_count }} item(s)</div>
-                                        </div>
-                                        <div class="col-lg-3 col-md-6">
-                                            <div class="order-label">Total Amount</div>
-                                            <div class="order-value fw-bold" style="font-size: 1.2rem; color: var(--brand-accent);">₹{{ "%.0f"|format(order.total_amount) }}</div>
-                                        </div>
-                                        <div class="col-lg-3 col-md-6">
-                                            <div class="order-label mb-2">Current Status</div>
-                                            <span class="badge-status {{ order.status_badge_class }}">
-                                                <i class="fas {{ order.status_icon }}"></i> {{ order.status_label }}
-                                            </span>
-                                        </div>
-                                        <div class="col-12">
-                                            <form action="{{ url_for('update_order_status', order_id=order._id) }}" method="POST" class="row g-3 align-items-end">
-                                                <div class="col-md-8">
-                                                    <label class="form-label fw-bold">Update Delivery Status</label>
-                                                    <select name="status" class="form-select status-select">
-                                                        {% for option in status_options %}
-                                                        <option value="{{ option.value }}" {% if option.value == order.status %}selected{% endif %}>{{ option.label }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <button type="submit" class="btn btn-update w-100"><i class="fas fa-arrows-rotate"></i> Save</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
+                        <span class="status-chip {{ order.status_badge_class }}"><i class="fas {{ order.status_icon }}"></i> {{ order.status_label }}</span>
+                    </div>
 
-                                    <div class="order-label mt-4">Order Breakdown</div>
-                                    <div class="order-items-list">
-                                        <div class="order-item-head">
-                                            <span>Item Name</span>
-                                            <span class="order-col-right">Qty</span>
-                                            <span class="order-col-right">Price</span>
-                                            <span class="order-col-right">Total</span>
-                                        </div>
-                                        {% for item in order.get('items', []) %}
-                                        <div class="order-item-row-admin">
-                                            <span>
-                                                <span class="order-item-name">{{ item.product_name }}</span>
-                                                {% if item.brand %}
-                                                <span class="order-item-brand">from {{ item.brand }}</span>
-                                                {% endif %}
-                                            </span>
-                                            <span class="order-col-right">{{ item.quantity }}</span>
-                                            <span class="order-col-right">₹{{ "%.0f"|format(item.price_per_unit) }}</span>
-                                            <span class="order-col-right">₹{{ "%.0f"|format(item.item_total) }}</span>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
+                    <form action="{{ url_for('update_order_status', order_id=order._id) }}" method="POST" class="row g-2 align-items-end mb-2">
+                        <div class="col-md-8">
+                            <label class="small fw-bold mb-1">Update Status</label>
+                            <select class="form-select" name="status">
+                                {% for option in status_options %}
+                                <option value="{{ option.value }}" {% if option.value == order.status %}selected{% endif %}>{{ option.label }}</option>
                                 {% endfor %}
-                            </div>
+                            </select>
                         </div>
+                        <div class="col-md-4"><button class="btn-primary-admin w-100" type="submit">Save</button></div>
+                    </form>
+
+                    <div class="order-items">
+                        <div class="order-row">
+                            <span>Item</span>
+                            <span class="cell-right">Qty</span>
+                            <span class="cell-right">Price</span>
+                            <span class="cell-right">Total</span>
+                        </div>
+                        {% for item in order.get('items', []) %}
+                        <div class="order-row">
+                            <span>{{ item.product_name }}{% if item.brand %} <small class="text-muted">({{ item.brand }})</small>{% endif %}</span>
+                            <span class="cell-right">{{ item.quantity }}</span>
+                            <span class="cell-right">₹{{ "%.0f"|format(item.price_per_unit) }}</span>
+                            <span class="cell-right">₹{{ "%.0f"|format(item.item_total) }}</span>
+                        </div>
+                        {% endfor %}
                     </div>
-                {% else %}
-                    <div class="alert alert-info" role="alert">
-                        <i class="fas fa-info-circle"></i> No orders found.
-                    </div>
-                {% endif %}
-            </div>
-        </div>
+                </article>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info mb-0">No active orders found.</div>
+            {% endif %}
+        {% endif %}
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</section>
+{% endblock %}

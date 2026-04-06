@@ -1,172 +1,118 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Account - Organic Pulse</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --brand-green: #2d7a4a;
-            --brand-green-dark: #1a4d2e;
-            --brand-accent: #52b788;
-            --bg-soft: #f8fdf9;
-        }
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: linear-gradient(135deg, var(--bg-soft) 0%, #e8f5e9 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-        }
-        .otp-card {
-            background: #ffffff;
-            border-radius: 24px;
-            padding: 40px 32px;
-            width: 100%;
-            max-width: 420px;
-            margin: auto;
-            border: 1px solid rgba(45, 122, 74, 0.15);
-            box-shadow: 0 20px 50px rgba(26, 77, 46, 0.12);
-        }
-        .farm-logo-circle {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-        }
-        .otp-title {
-            font-weight: 800;
-            font-size: 1.3rem;
-            margin-top: 12px;
-            color: var(--brand-green-dark);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .otp-subtitle {
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 4px;
-        }
-        .email-hint {
-            background: var(--bg-soft);
-            padding: 12px;
-            border-radius: 12px;
-            margin: 20px 0;
-            font-size: 0.85rem;
-            color: var(--brand-green-dark);
-            border-left: 4px solid var(--brand-green);
-        }
-        .form-label {
-            font-weight: 600;
-            color: var(--brand-green-dark);
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-        .form-control {
-            background-color: var(--bg-soft);
-            border: 1.5px solid #ddd;
-            border-radius: 14px;
-            padding: 12px 16px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-        .form-control:focus {
-            background-color: #fff;
-            border-color: var(--brand-green);
-            box-shadow: 0 0 0 2px rgba(45, 122, 74, 0.15);
-        }
-        .btn-verify {
-            background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
-            color: #fff;
-            border-radius: 14px;
-            font-weight: 700;
-            padding: 12px;
-            border: none;
-            transition: all 0.3s ease;
-            margin-top: 15px;
-        }
-        .btn-verify:hover {
-            background: linear-gradient(135deg, var(--brand-green-dark), var(--brand-green));
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(26, 77, 46, 0.25);
-        }
-        .btn-resend {
-            border-color: var(--brand-green);
-            color: var(--brand-green);
-            border-radius: 14px;
-            font-weight: 600;
-        }
-        .btn-resend:hover {
-            background-color: var(--brand-green);
-            color: white;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<div class="container">
-    <div class="otp-card">
-        <div class="text-center mb-4">
-            <div class="farm-logo-circle"><i class="fas fa-shield-alt"></i></div>
-            <div class="otp-title">Verify Account</div>
-            <div class="otp-subtitle">Secure Your Organic Pulse Account</div>
-        </div>
+{% block title %}Verify OTP | Mota Anaj{% endblock %}
 
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
-                        <strong><i class="fas fa-info-circle"></i></strong> {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% block extra_head %}
+<style>
+    .auth-shell {
+        max-width: 470px;
+        margin-inline: auto;
+    }
+
+    .auth-card {
+        background: #fff;
+        border-radius: 24px;
+        border: 1px solid rgba(33, 73, 51, 0.15);
+        box-shadow: 0 18px 34px rgba(24, 49, 34, 0.12);
+        padding: 1.5rem;
+    }
+
+    .auth-title {
+        font-family: 'Fraunces', serif;
+        color: #1f3a2b;
+        margin-bottom: 0.25rem;
+    }
+
+    .auth-subtitle {
+        color: #5b6b61;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .email-hint {
+        border-radius: 12px;
+        background: rgba(79, 165, 114, 0.14);
+        color: #214933;
+        padding: 0.65rem 0.72rem;
+        margin-bottom: 1rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+
+    .auth-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #214933;
+        margin-bottom: 0.35rem;
+    }
+
+    .auth-input {
+        border-radius: 12px;
+        border: 1px solid rgba(33, 73, 51, 0.2);
+        padding: 0.68rem 0.78rem;
+        width: 100%;
+        margin-bottom: 0.85rem;
+    }
+
+    .auth-input:focus {
+        outline: none;
+        border-color: #4fa572;
+        box-shadow: 0 0 0 3px rgba(79, 165, 114, 0.24);
+    }
+
+    .btn-auth-primary,
+    .btn-auth-secondary {
+        width: 100%;
+        display: inline-block;
+        text-align: center;
+        border-radius: 12px;
+        padding: 0.72rem 0.88rem;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .btn-auth-primary {
+        border: 0;
+        color: #fff;
+        background: linear-gradient(140deg, #2b6745, #4fa572);
+    }
+
+    .btn-auth-secondary {
+        margin-top: 0.55rem;
+        border: 1px solid rgba(33, 73, 51, 0.25);
+        color: #214933;
+        background: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="auth-shell">
+    <div class="auth-card">
+        <h1 class="auth-title">Verify Your Account</h1>
+        <p class="auth-subtitle">Enter the OTP sent by Mota Anaj to continue securely.</p>
 
         {% if email_mask %}
-            <div class="email-hint">
-                <i class="fas fa-envelope"></i> Code sent to <strong>{{ email_mask }}</strong>
-            </div>
+        <div class="email-hint"><i class="fa-regular fa-envelope"></i> Code sent to {{ email_mask }}</div>
         {% endif %}
 
         <form method="POST">
             <input type="hidden" name="username" value="{{ username }}">
             <input type="hidden" name="account_type" value="{{ account_type or 'customer' }}">
             <input type="hidden" name="next" value="{{ next_url or '' }}">
-            
-            <div class="mb-3">
-                <label for="otp" class="form-label">Verification Code</label>
-                <input type="text" id="otp" name="otp" class="form-control" placeholder="Enter 6-digit code" maxlength="6" required autofocus>
-            </div>
 
-            <button type="submit" class="btn btn-verify w-100">Verify & Continue</button>
+            <label class="auth-label" for="otp">Verification code</label>
+            <input class="auth-input" type="text" id="otp" name="otp" placeholder="Enter 6-digit code" maxlength="6" required autofocus>
+
+            <button class="btn-auth-primary" type="submit">Verify And Continue</button>
         </form>
 
-        <form method="POST" action="{{ url_for('resend_otp') }}" style="margin-top: 15px;">
+        <form method="POST" action="{{ url_for('resend_otp') }}">
             <input type="hidden" name="username" value="{{ username }}">
             <input type="hidden" name="account_type" value="{{ account_type or 'customer' }}">
             <input type="hidden" name="next" value="{{ next_url or '' }}">
-            <button type="submit" class="btn btn-outline-success w-100 btn-resend">
-                <i class="fas fa-redo"></i> Resend Code
-            </button>
+            <button class="btn-auth-secondary" type="submit">Resend OTP</button>
         </form>
-
-        <div style="text-align: center; margin-top: 20px;">
-            <a href="/" style="color: #666; text-decoration: none; font-size: 0.9rem;">
-                <i class="fas fa-arrow-left"></i> Back to Store
-            </a>
-        </div>
     </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</section>
+{% endblock %}

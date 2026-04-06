@@ -1,160 +1,136 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customers Info | Organic Pulse Collective</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --brand-green: #2d7a4a;
-            --brand-green-dark: #1a4d2e;
-            --brand-accent: #52b788;
-            --brand-green-light: #d4edda;
-        }
-        body {
-            background: linear-gradient(135deg, #f8fdf9, #e8f5e9);
-            font-family: 'Outfit', sans-serif;
-        }
-        .navbar-admin {
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 2px 12px rgba(26, 77, 46, 0.08);
-            border-bottom: 1px solid rgba(45, 122, 74, 0.1);
-        }
-        .navbar-brand-admin {
-            font-weight: 800;
-            font-size: 1.2rem;
-            color: var(--brand-green-dark) !important;
-            letter-spacing: 1px;
-        }
-        .btn-farm-outline {
-            border-color: var(--brand-green);
-            color: var(--brand-green-dark);
-            background-color: #ffffff;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .btn-farm-outline:hover {
-            border-color: var(--brand-green-dark);
-            color: white;
-            background-color: var(--brand-green);
-        }
-        .page-title {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--brand-green-dark);
-            letter-spacing: -0.5px;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 18px;
-        }
-        .summary-card {
-            background: white;
-            border: 1px solid rgba(45, 122, 74, 0.12);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(26, 77, 46, 0.08);
-        }
-        .summary-label {
-            font-size: 0.82rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            color: var(--brand-green-dark);
-            opacity: 0.8;
-        }
-        .summary-value {
-            font-size: 1.9rem;
-            font-weight: 800;
-            color: var(--brand-green-dark);
-            margin-top: 6px;
-        }
-        .table-wrap {
-            background: white;
-            border: 1px solid rgba(45, 122, 74, 0.12);
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(26, 77, 46, 0.08);
-            overflow: hidden;
-        }
-        .table {
-            margin: 0;
-        }
-        .table thead th {
-            background: var(--brand-green-light);
-            color: var(--brand-green-dark);
-            font-weight: 700;
-            border: none;
-        }
-        .table tbody tr:hover {
-            background-color: rgba(45, 122, 74, 0.05);
-        }
-        .badge-orders {
-            background: var(--brand-green);
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-weight: 700;
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-admin mb-4">
-        <div class="container-fluid">
-            <span class="navbar-brand-admin"><i class="fas fa-leaf"></i> ORGANIC PULSE ADMIN</span>
-            <div class="ms-auto d-flex gap-2">
-                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-sm btn-farm-outline"><i class="fas fa-chart-line"></i> Dashboard</a>
-                <a href="{{ url_for('index') }}" class="btn btn-sm btn-farm-outline"><i class="fas fa-home"></i> Store</a>
-                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            </div>
-        </div>
-    </nav>
+{% extends "base.html" %}
 
-    <div class="container-fluid pb-5" style="padding: 0 20px;">
-        <h1 class="page-title mb-4"><i class="fas fa-users"></i> Customers Info</h1>
+{% block title %}Customers | Mota Anaj Admin{% endblock %}
 
-        <div class="summary-grid mb-4">
-            <div class="summary-card">
-                <div class="summary-label">Total Customers</div>
-                <div class="summary-value">{{ customers_summary.total_customers }}</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-label">Total Orders Placed</div>
-                <div class="summary-value">{{ customers_summary.total_orders }}</div>
-            </div>
-        </div>
+{% block extra_head %}
+<style>
+    .page-head {
+        background: #fff;
+        border: 1px solid rgba(33, 73, 51, 0.14);
+        border-radius: 16px;
+        padding: 0.8rem 1rem;
+        box-shadow: 0 10px 24px rgba(24, 49, 34, 0.08);
+        margin-bottom: 1rem;
+    }
 
-        <div class="table-wrap table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th style="width: 90px;">#</th>
-                        <th><i class="fas fa-user"></i> Customer Name</th>
-                        <th><i class="fas fa-envelope"></i> Email Address</th>
-                        <th class="text-end"><i class="fas fa-bag-shopping"></i> Orders Placed</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if customers %}
-                        {% for customer in customers %}
-                        <tr>
-                            <td>{{ loop.index }}</td>
-                            <td class="fw-bold">{{ customer.name }}</td>
-                            <td>{{ customer.email }}</td>
-                            <td class="text-end"><span class="badge-orders">{{ customer.order_count }}</span></td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">No customers found.</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
+    .page-title {
+        margin: 0;
+        font-family: 'Fraunces', serif;
+        color: #1f3a2b;
+    }
+
+    .admin-btn {
+        border-radius: 10px;
+        border: 1px solid rgba(33, 73, 51, 0.25);
+        color: #1f3a2b;
+        text-decoration: none;
+        padding: 0.46rem 0.72rem;
+        font-weight: 700;
+        display: inline-block;
+        background: #fff;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.7rem;
+        margin-bottom: 1rem;
+    }
+
+    .stats-card {
+        border: 1px solid rgba(33, 73, 51, 0.12);
+        border-radius: 14px;
+        background: #fff;
+        padding: 0.9rem;
+        box-shadow: 0 10px 20px rgba(24, 49, 34, 0.07);
+    }
+
+    .stats-label {
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #54655a;
+    }
+
+    .stats-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #214933;
+    }
+
+    .table-shell {
+        border: 1px solid rgba(33, 73, 51, 0.14);
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 14px 28px rgba(24, 49, 34, 0.09);
+    }
+
+    .table thead th {
+        font-size: 0.83rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #264934;
+        background: #edf5e6;
+        border: 0;
+    }
+
+    .badge-orders {
+        border-radius: 999px;
+        background: #2b6745;
+        color: #fff;
+        font-weight: 800;
+        padding: 0.28rem 0.6rem;
+        font-size: 0.76rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="page-head d-flex justify-content-between align-items-center gap-2 flex-wrap">
+    <h1 class="page-title">Customer Insights</h1>
+    <div class="d-flex gap-2">
+        <a class="admin-btn" href="{{ url_for('admin_dashboard') }}">Back to Dashboard</a>
+        <a class="admin-btn" href="{{ url_for('index') }}">View Store</a>
     </div>
-</body>
-</html>
+</section>
+
+<section class="stats-grid">
+    <article class="stats-card">
+        <div class="stats-label">Total Customers</div>
+        <div class="stats-value">{{ customers_summary.total_customers }}</div>
+    </article>
+    <article class="stats-card">
+        <div class="stats-label">Total Orders Placed</div>
+        <div class="stats-value">{{ customers_summary.total_orders }}</div>
+    </article>
+</section>
+
+<section class="table-shell table-responsive">
+    <table class="table align-middle mb-0">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Customer Name</th>
+                <th>Email</th>
+                <th class="text-end">Orders</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if customers %}
+                {% for customer in customers %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td class="fw-bold">{{ customer.name }}</td>
+                    <td>{{ customer.email }}</td>
+                    <td class="text-end"><span class="badge-orders">{{ customer.order_count }}</span></td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr><td colspan="4" class="text-center py-4 text-muted">No customer records available.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

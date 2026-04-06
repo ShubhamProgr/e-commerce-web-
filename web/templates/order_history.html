@@ -1,419 +1,194 @@
 {% extends "base.html" %}
 
-{% block title %}My Orders - Organic Pulse Collective{% endblock %}
+{% block title %}Order History | Mota Anaj{% endblock %}
 
-{% block content %}
+{% block extra_head %}
 <style>
-    :root {
-        --brand-green: #2d7a4a;
-        --brand-green-dark: #1a4d2e;
-        --brand-accent: #52b788;
-        --brand-green-light: #d4edda;
-        --status-placed: #d97706;
-        --status-on-the-way: #2563eb;
-        --status-delivered: #15803d;
-        --status-cancelled: #b91c1c;
-    }
-
-    .orders-container {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 40px 20px;
-    }
-
-    .page-title {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--brand-green-dark);
-        margin-bottom: 30px;
-        letter-spacing: -0.5px;
+    .orders-title {
+        font-family: 'Fraunces', serif;
+        font-size: clamp(1.6rem, 3.5vw, 2.3rem);
+        color: #1f3a2b;
+        margin-bottom: 1rem;
     }
 
     .order-card {
-        background: white;
-        border-radius: 16px;
+        border: 1px solid rgba(33, 73, 51, 0.12);
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 14px 30px rgba(24, 49, 34, 0.09);
         overflow: hidden;
-        border: 1px solid rgba(45, 122, 74, 0.1);
-        box-shadow: 0 4px 12px rgba(26, 77, 46, 0.08);
-        transition: all 0.3s ease;
-        margin-bottom: 24px;
+        margin-bottom: 1rem;
     }
 
-    .order-card:hover {
-        box-shadow: 0 8px 20px rgba(26, 77, 46, 0.15);
-        transform: translateY(-2px);
-    }
-
-    .order-header {
-        background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
-        color: white;
-        padding: 20px;
+    .order-head {
+        padding: 0.95rem 1rem;
+        background: linear-gradient(130deg, #214933, #2b6745);
+        color: #fff;
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-    }
-
-    .order-number {
-        font-size: 0.9rem;
-        font-weight: 600;
-        opacity: 0.9;
-        margin-bottom: 4px;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        align-items: center;
     }
 
     .order-id {
-        font-size: 1.1rem;
         font-weight: 800;
-        letter-spacing: 0.5px;
     }
 
-    .order-date {
-        font-size: 0.85rem;
-        opacity: 0.85;
-        margin-top: 4px;
-    }
-
-    .order-status {
-        display: inline-block;
-        color: white;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+    .status-chip {
+        border-radius: 999px;
+        padding: 0.28rem 0.66rem;
+        font-size: 0.76rem;
+        font-weight: 800;
+        color: #fff;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 0.35rem;
     }
 
-    .status-placed {
-        background: var(--status-placed);
-    }
-
-    .status-on-the-way {
-        background: var(--status-on-the-way);
-    }
-
-    .status-delivered {
-        background: var(--status-delivered);
-    }
-
-    .status-cancelled {
-        background: var(--status-cancelled);
-    }
+    .status-placed { background: #c77815; }
+    .status-on-the-way { background: #2d63cf; }
+    .status-delivered { background: #22884a; }
+    .status-cancelled { background: #b63a35; }
 
     .order-body {
-        padding: 24px;
+        padding: 0.95rem 1rem;
     }
 
-    .items-section-title {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--brand-green-dark);
-        margin-bottom: 16px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .order-items-table {
-        width: 100%;
-        margin-bottom: 20px;
-    }
-
-    .items-head {
-        border-bottom: 2px solid var(--brand-green-light);
-        padding-bottom: 10px;
-        margin-bottom: 12px;
-    }
-
-    .items-head-row {
-        display: flex;
-        justify-content: space-between;
-        font-weight: 700;
-        font-size: 0.85rem;
-        color: var(--brand-green-dark);
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }
-
-    .order-item-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--brand-green-light);
+    .item-row {
+        display: grid;
+        grid-template-columns: 1fr 60px 110px;
+        gap: 0.6rem;
+        border-top: 1px solid rgba(33, 73, 51, 0.11);
+        padding: 0.6rem 0;
         align-items: center;
     }
 
-    .order-item-row:last-child {
-        border-bottom: none;
-    }
-
-    .item-details {
-        flex: 1;
+    .item-row:first-of-type {
+        border-top: 0;
+        padding-top: 0;
     }
 
     .item-name {
         font-weight: 700;
-        color: var(--brand-green-dark);
-        margin-bottom: 4px;
-        font-size: 0.95rem;
+        color: #1f3a2b;
     }
 
     .item-brand {
         font-size: 0.8rem;
-        color: #666;
+        color: #5b6b61;
     }
 
-    .item-quantity {
-        text-align: center;
-        font-weight: 600;
-        color: var(--brand-green-dark);
-        width: 60px;
-    }
-
-    .item-price {
-        text-align: right;
+    .item-center,
+    .item-right {
         font-weight: 700;
-        color: var(--brand-accent);
-        min-width: 100px;
-        font-size: 1rem;
+        color: #29513a;
     }
 
-    .order-summary {
-        background: var(--brand-green-light);
-        padding: 16px;
-        border-radius: 12px;
-        margin-top: 20px;
-    }
+    .item-center { text-align: center; }
+    .item-right { text-align: right; }
 
-    .summary-row {
+    .order-total {
+        margin-top: 0.7rem;
+        border-top: 1px dashed rgba(33, 73, 51, 0.25);
+        padding-top: 0.7rem;
         display: flex;
         justify-content: space-between;
-        margin-bottom: 8px;
-        align-items: center;
-    }
-
-    .summary-row:last-child {
-        margin-bottom: 0;
-        padding-top: 8px;
-        border-top: 2px solid rgba(45, 122, 74, 0.3);
-    }
-
-    .summary-label {
-        color: var(--brand-green-dark);
-        font-weight: 600;
-        font-size: 0.9rem;
-    }
-
-    .summary-value {
-        font-weight: 700;
-        color: var(--brand-green-dark);
-    }
-
-    .summary-total {
-        font-size: 1.1rem;
-        color: var(--brand-accent);
-    }
-
-    .order-footer {
-        background: var(--brand-green-light);
-        padding: 16px 20px;
-        font-size: 0.85rem;
-        color: var(--brand-green-dark);
-        border-top: 1px solid rgba(45, 122, 74, 0.2);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .email-badge {
-        background: white;
-        padding: 6px 12px;
-        border-radius: 12px;
-        font-weight: 600;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-    }
-
-    .empty-state-icon {
-        width: 140px;
-        height: 140px;
-        border-radius: 50%;
-        background: var(--brand-green-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-        font-size: 3rem;
-    }
-
-    .empty-state-title {
-        font-size: 1.5rem;
         font-weight: 800;
-        color: var(--brand-green-dark);
-        margin-bottom: 10px;
+        color: #214933;
     }
 
-    .empty-state-text {
-        color: #666;
-        margin-bottom: 25px;
-        max-width: 500px;
-        margin-left: auto;
-        margin-right: auto;
+    .empty-box {
+        border-radius: 18px;
+        border: 1px dashed rgba(33, 73, 51, 0.3);
+        padding: 2rem 1rem;
+        text-align: center;
+        background: rgba(248, 248, 239, 0.7);
     }
 
-    .btn-continue-shop {
-        background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 12px 24px;
-        font-weight: 700;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-block;
-    }
-
-    .btn-continue-shop:hover {
-        background: linear-gradient(135deg, var(--brand-green-dark), var(--brand-green));
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(26, 77, 46, 0.25);
-        color: white;
-    }
-
-    .action-buttons {
-        margin-top: 30px;
+    .cta-row {
         display: flex;
-        gap: 12px;
-        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-top: 1rem;
     }
 
-    .btn-action {
+    .cta-btn {
         border-radius: 12px;
-        padding: 12px 24px;
-        font-weight: 700;
+        padding: 0.65rem 0.9rem;
+        font-weight: 800;
         text-decoration: none;
-        transition: all 0.3s ease;
-        border: none;
-        cursor: pointer;
     }
 
-    .btn-back {
-        border: 2px solid var(--brand-green);
-        color: var(--brand-green-dark);
-        background: white;
+    .cta-primary {
+        background: linear-gradient(140deg, #2b6745, #4fa572);
+        color: #fff;
     }
 
-    .btn-back:hover {
-        background: var(--brand-green);
-        color: white;
+    .cta-secondary {
+        border: 1px solid rgba(33, 73, 51, 0.25);
+        color: #1f3a2b;
+        background: #fff;
+    }
+
+    @media (max-width: 700px) {
+        .item-row {
+            grid-template-columns: 1fr;
+        }
+
+        .item-center,
+        .item-right {
+            text-align: left;
+        }
     }
 </style>
+{% endblock %}
 
-<div class="orders-container">
-    <h1 class="page-title"><i class="fas fa-receipt"></i> Order History</h1>
+{% block content %}
+<h1 class="orders-title"><i class="fa-solid fa-receipt"></i> Your Order History</h1>
 
-    {% if orders %}
-        <div class="orders-grid">
-            {% for order in orders %}
-            <div class="order-card">
-                <div class="order-header">
-                    <div>
-                        <div class="order-number">Order ID</div>
-                        <div class="order-id">#{{ order._id }}</div>
-                        <div class="order-date">
-                            <i class="fas fa-calendar"></i> {{ order.order_date|datetime_display }}
-                        </div>
-                    </div>
-                    <div>
-                        <span class="order-status {{ order.status_badge_class }}">
-                            <i class="fas {{ order.status_icon }}"></i> {{ order.status_label }}
-                        </span>
-                    </div>
+{% if orders %}
+    {% for order in orders %}
+    <article class="order-card">
+        <header class="order-head">
+            <div>
+                <div class="order-id">Order #{{ order._id }}</div>
+                <small>{{ order.order_date|datetime_display }}</small>
+            </div>
+            <span class="status-chip {{ order.status_badge_class }}"><i class="fas {{ order.status_icon }}"></i> {{ order.status_label }}</span>
+        </header>
+        <div class="order-body">
+            {% for item in order.get('items', []) %}
+            <div class="item-row">
+                <div>
+                    <div class="item-name">{{ item.product_name }}</div>
+                    {% if item.brand %}<div class="item-brand">{{ item.brand }}</div>{% endif %}
                 </div>
-
-                <div class="order-body">
-                    <div class="items-section-title">Order Items</div>
-                    
-                    <div class="order-items-table">
-                        <div class="items-head">
-                            <div class="items-head-row">
-                                <div style="flex: 1;">Product</div>
-                                <div style="width: 60px; text-align: center;">Qty</div>
-                                <div style="min-width: 100px; text-align: right;">Price</div>
-                            </div>
-                        </div>
-
-                        {% for item in order.get('items', []) %}
-                        <div class="order-item-row">
-                            <div class="item-details">
-                                <div class="item-name">{{ item.product_name }}</div>
-                                {% if item.brand %}
-                                <div class="item-brand">From: {{ item.brand }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="item-quantity">{{ item.quantity }}x</div>
-                            <div class="item-price">₹{{ "%.0f"|format(item.item_total) }}</div>
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <div class="order-summary">
-                        <div class="summary-row">
-                            <span class="summary-label">Subtotal</span>
-                            <span class="summary-value">₹{{ "%.0f"|format(order.total_amount) }}</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Tax</span>
-                            <span class="summary-value">₹0</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Delivery</span>
-                            <span class="summary-value" style="color: var(--brand-accent);">FREE</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Total Amount</span>
-                            <span class="summary-value summary-total">₹{{ "%.0f"|format(order.total_amount) }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="order-footer">
-                    <span><i class="fas fa-envelope"></i> Order confirmation sent to:</span>
-                    <span class="email-badge">{{ order.email }}</span>
-                </div>
+                <div class="item-center">x{{ item.quantity }}</div>
+                <div class="item-right">₹{{ "%.0f"|format(item.item_total) }}</div>
             </div>
             {% endfor %}
-        </div>
-    {% else %}
-        <div class="empty-state">
-            <div class="empty-state-icon">
-                <i class="fas fa-shopping-bag"></i>
+
+            <div class="order-total">
+                <span>Total</span>
+                <span>₹{{ "%.0f"|format(order.total_amount) }}</span>
             </div>
-            <h3 class="empty-state-title">No Orders Yet</h3>
-            <p class="empty-state-text">
-                You haven't placed any orders yet. Start shopping for premium organic pulses, legumes, and farm products now!
-            </p>
-            <a href="{{ url_for('index') }}" class="btn-continue-shop">
-                <i class="fas fa-leaf"></i> Continue Shopping
-            </a>
+
+            <small class="text-muted">Confirmation email: {{ order.customer_email or 'N/A' }}</small>
         </div>
-    {% endif %}
+    </article>
+    {% endfor %}
 
-    {% if orders %}
-    <div class="action-buttons">
-        <a href="{{ url_for('view_cart') }}" class="btn-action btn-back">
-            <i class="fas fa-shopping-cart"></i> Back to Cart
-        </a>
-        <a href="{{ url_for('index') }}" class="btn-action btn-continue-shop">
-            <i class="fas fa-leaf"></i> Browse More Products
-        </a>
+    <div class="cta-row">
+        <a class="cta-btn cta-secondary" href="{{ url_for('view_cart') }}">Back to cart</a>
+        <a class="cta-btn cta-primary" href="{{ url_for('index') }}">Shop more products</a>
     </div>
-    {% endif %}
-</div>
-
+{% else %}
+    <div class="empty-box">
+        <div style="font-size: 2.2rem; color: #2b6745;"><i class="fa-solid fa-bag-shopping"></i></div>
+        <h3 class="mt-3 mb-2" style="color:#214933; font-weight: 800;">No orders yet</h3>
+        <p class="text-muted mb-3">Start your healthy pantry with our farm-fresh collection.</p>
+        <a class="cta-btn cta-primary" href="{{ url_for('index') }}">Start shopping</a>
+    </div>
+{% endif %}
 {% endblock %}

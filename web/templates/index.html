@@ -1,433 +1,389 @@
 {% extends "base.html" %}
 
-{% block title %}Premium Organic Pulses, Legumes & Farm Products{% endblock %}
+{% block title %}Mota Anaj | Shop Healthy Green Staples{% endblock %}
 
-{% block content %}
+{% block extra_head %}
 <style>
-    :root {
-        --brand-green: #2d7a4a;
-        --brand-green-dark: #1a4d2e;
-        --brand-green-light: #d4edda;
-        --brand-accent: #52b788;
-    }
-
-    .farm-shell {
-        padding: 20px;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .farm-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 40px;
-        gap: 30px;
-    }
-
-    .farm-logo-lockup {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .farm-logo-circle {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, var(--brand-green), var(--brand-accent));
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.5rem;
-    }
-
-    .farm-title-block h1 {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--brand-green-dark);
-        margin: 0;
-    }
-
-    .farm-title-block p {
-        color: #6b7280;
-        margin: 5px 0 0 0;
-    }
-
-    .farm-cta-area {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 10px;
-    }
-
-    .farm-tags {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-    }
-
-    .farm-tag {
-        background: var(--brand-green-light);
-        color: var(--brand-green-dark);
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-
-    .farm-subheader {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 12px;
-        margin-top: 8px;
-    }
-
-    .farm-subheader h2 {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: var(--brand-green-dark);
-        margin: 0;
-    }
-
-    .farm-subheader span {
-        font-size: 0.8rem;
-        color: #6b7280;
-    }
-
-    .farm-pill-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 16px;
-    }
-
-    .farm-pill {
-        padding: 6px 12px;
-        font-size: 0.75rem;
-        border-radius: 999px;
-        background-color: #fefce8;
-        border: 1px solid rgba(234, 179, 8, 0.6);
-        color: #854d0e;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .farm-grid {
-        background-color: #ffffff;
-        border-radius: 18px;
-        padding: 18px 16px 10px;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-    }
-
-    .card {
-        border: 1px solid #edf2f7;
-        border-radius: 14px;
-        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-        background: linear-gradient(145deg, #ffffff, #f8fafc);
-    }
-
-    .card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(34, 197, 94, 0.4);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
-    }
-
-    .image-box {
-        height: 140px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .hero-panel {
         position: relative;
-        background: radial-gradient(circle at top, #fef9c3 0, #ecfdf3 55%, #f9fafb 100%);
-        border-radius: 10px;
+        overflow: hidden;
+        border-radius: 32px;
+        background:
+            linear-gradient(130deg, rgba(24, 49, 34, 0.95), rgba(33, 73, 51, 0.92)),
+            url('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=80') center/cover;
+        color: #fff;
+        min-height: 350px;
+        padding: 2.4rem 2.2rem;
+        box-shadow: 0 26px 50px rgba(24, 49, 34, 0.25);
+        margin-bottom: 1.8rem;
     }
 
-    .image-box img {
-        max-height: 110px;
+    .hero-panel::after {
+        content: '';
+        position: absolute;
+        width: 330px;
+        height: 330px;
+        border-radius: 50%;
+        right: -100px;
+        bottom: -130px;
+        background: radial-gradient(circle, rgba(118, 196, 143, 0.4), transparent 70%);
+        pointer-events: none;
+    }
+
+    .hero-eyebrow {
+        font-size: 0.77rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-weight: 800;
+        color: rgba(255, 255, 255, 0.82);
+    }
+
+    .hero-title {
+        font-family: 'Fraunces', serif;
+        font-size: clamp(1.9rem, 4vw, 3rem);
+        line-height: 1.08;
+        margin: 0.72rem 0 0.75rem;
+        max-width: 620px;
+    }
+
+    .hero-copy {
+        max-width: 620px;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 1rem;
+    }
+
+    .hero-chip-row {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    .hero-chip {
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        border-radius: 999px;
+        padding: 0.35rem 0.82rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-title {
+        margin: 0;
+        font-family: 'Fraunces', serif;
+        font-size: 1.7rem;
+        color: #213a2b;
+    }
+
+    .section-copy {
+        margin: 0;
+        color: #506254;
+        font-size: 0.95rem;
+    }
+
+    .catalog-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+
+    .product-card {
+        background: #fff;
+        border: 1px solid rgba(33, 73, 51, 0.12);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 10px 24px rgba(24, 49, 34, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        animation: cardIn 0.45s ease both;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 18px 28px rgba(24, 49, 34, 0.16);
+    }
+
+    .product-media {
+        position: relative;
+        height: 170px;
+        background: linear-gradient(160deg, #f8f8ef, #e8f2dc);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-media img {
+        max-width: 78%;
+        max-height: 130px;
         object-fit: contain;
     }
 
-    .delivery-tag {
+    .media-badge {
         position: absolute;
-        top: 8px;
-        left: 8px;
-        background: rgba(255, 255, 255, 0.96);
-        border: 1px solid #e5e7eb;
-        font-size: 0.6rem;
-        font-weight: 700;
-        padding: 2px 6px;
+        top: 11px;
+        left: 11px;
+        background: #fff;
+        color: #244c34;
         border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 0.2rem 0.6rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
     }
 
+    .product-body {
+        padding: 0.9rem;
+    }
+
     .product-name {
-        font-weight: 600;
-        font-size: 0.9rem;
-        height: 2.4em;
-        overflow: hidden;
+        margin: 0;
+        font-weight: 800;
+        color: #213a2b;
+        font-size: 0.98rem;
+        line-height: 1.25;
     }
 
-    .product-qty {
-        color: #6b7280;
-        font-size: 0.75rem;
-        margin-bottom: 10px;
+    .product-category {
+        margin-top: 0.4rem;
+        margin-bottom: 0.65rem;
+        color: #5b6b61;
+        font-size: 0.82rem;
     }
 
-    .price-label {
-        font-size: 0.8rem;
-        color: #6b7280;
+    .price-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.7rem;
     }
 
-    .btn-add {
-        color: var(--brand-green-dark);
-        background: #ffffff;
-        border: 1px solid var(--brand-green-dark);
-        border-radius: 999px;
+    .price-tag {
+        color: #2b6745;
+        font-weight: 800;
+        font-size: 1.08rem;
+    }
+
+    .btn-view {
+        color: #2b6745;
+        text-decoration: none;
         font-weight: 700;
-        font-size: 0.75rem;
-        padding: 4px 16px;
+        font-size: 0.85rem;
     }
 
-    .btn-add:hover {
-        background: var(--brand-green-dark);
-        color: #f9fafb;
+    .btn-view:hover {
+        color: #183122;
+    }
+
+    .action-row {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .btn-add-to-cart {
+        border: 0;
+        border-radius: 999px;
+        background: linear-gradient(140deg, #2b6745, #4fa572);
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.8rem;
+        padding: 0.36rem 0.9rem;
     }
 
     .qty-controls {
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: #f3f4f6;
+        border: 1px solid rgba(33, 73, 51, 0.2);
         border-radius: 999px;
-        padding: 2px 6px;
+        padding: 0.16rem;
+        background: #f6f9f3;
+        gap: 0.25rem;
     }
 
     .qty-btn {
-        width: 24px;
-        height: 24px;
-        border-radius: 999px;
-        border: none;
-        background: var(--brand-green-dark);
-        color: white;
-        font-size: 0.75rem;
-        padding: 0;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-    }
-
-    .qty-btn:hover {
-        background: var(--brand-green);
+        width: 26px;
+        height: 26px;
+        border: 0;
+        border-radius: 50%;
+        background: #2b6745;
+        color: #fff;
+        font-weight: 800;
     }
 
     .qty-display {
-        font-weight: 600;
-        font-size: 0.85rem;
-        min-width: 20px;
+        min-width: 24px;
         text-align: center;
+        font-weight: 800;
+        color: #1f3f2d;
+        font-size: 0.9rem;
     }
 
-    @media (max-width: 768px) {
-        .farm-header {
+    @keyframes cardIn {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 767px) {
+        .hero-panel {
+            padding: 1.45rem 1.1rem;
+            min-height: 310px;
+            border-radius: 24px;
+        }
+
+        .section-head {
             flex-direction: column;
             align-items: flex-start;
         }
-
-        .farm-cta-area {
-            align-items: flex-start;
-        }
-
-        .farm-shell {
-            padding-inline: 12px;
-        }
     }
 </style>
-<div class="farm-shell">
-    <header class="farm-header">
+{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <p class="hero-eyebrow mb-0">Premium Green Seller</p>
+    <h1 class="hero-title">Healthy everyday staples, directly from Mota Anaj farms.</h1>
+    <p class="hero-copy">From protein-rich dals to wholesome grains and pantry essentials, every batch is selected for purity, freshness, and trusted family nutrition.</p>
+    <div class="hero-chip-row">
+        <span class="hero-chip">Chemical-free quality</span>
+        <span class="hero-chip">Freshly packed</span>
+        <span class="hero-chip">Farm to kitchen</span>
+    </div>
+</section>
+
+<section>
+    <div class="section-head">
         <div>
-            <div class="farm-logo-lockup">
-                <div class="farm-logo-circle">🌾</div>
-                <div class="farm-title-block">
-                    <h1>GreenFields Farm Shop</h1>
-                    <p>Whole grains, pulses & harvest staples directly from the farm.</p>
+            <h2 class="section-title">Shop The Harvest</h2>
+            <p class="section-copy">{{ products|length }} healthy products curated for your daily meals.</p>
+        </div>
+    </div>
+
+    <div class="catalog-grid">
+        {% for product in products %}
+        <article class="product-card" style="animation-delay: {{ (loop.index0 * 0.04)|round(2) }}s;">
+            <div class="product-media">
+                <span class="media-badge">Mota Fresh</span>
+                <img src="{{ product.image }}" alt="{{ product.item }}">
+            </div>
+            <div class="product-body">
+                <h3 class="product-name">{{ product.item }}</h3>
+                <p class="product-category">{{ product.category }}</p>
+                <div class="price-line">
+                    <span class="price-tag">₹{{ product.price }}</span>
+                    <a class="btn-view" href="{{ url_for('product_detail', id=product._id) }}">View details</a>
                 </div>
-            </div>
-        </div>
-        <div class="farm-cta-area">
-            <div class="farm-tags">
-                <span class="farm-tag">Wheat & multigrain flour</span>
-                <span class="farm-tag">Toor, moong & chana dal</span>
-                <span class="farm-tag">Barley, millets & oats</span>
-            </div>
-        </div>
-    </header>
-
-    <section>
-        <div class="farm-subheader">
-            <h2>Farm pantry essentials</h2>
-            <span>Showing {{ products|length }} items from our latest harvest</span>
-        </div>
-
-        <div class="farm-pill-row">
-            <div class="farm-pill">
-                <span>🌾</span>
-                <span>Wheat & flours</span>
-            </div>
-            <div class="farm-pill">
-                <span>🌱</span>
-                <span>Pulses & lentils</span>
-            </div>
-            <div class="farm-pill">
-                <span>🌾</span>
-                <span>Barley & millets</span>
-            </div>
-            <div class="farm-pill">
-                <span>🫘</span>
-                <span>Beans & grams</span>
-            </div>
-        </div>
-
-        <div class="farm-grid">
-            {% with messages = get_flashed_messages() %}
-              {% if messages %}
-                {% for message in messages %}
-                  <div class="alert alert-success alert-dismissible fade show small py-2 mb-3 border-0 rounded-3 shadow-sm" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close small" data-bs-dismiss="alert" aria-label="Close"></button>
-                  </div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
-                {% for product in products %}
-                <div class="col">
-                    <div class="card h-100 p-2">
-                        <div class="image-box">
-                            <span class="delivery-tag">FRESH HARVEST</span>
-                            <img src="{{ product.image }}" 
-                                 alt="{{ product.item }}">
-                        </div>
-                        <div class="card-body p-1">
-                            <div class="product-name mt-2">{{ product.item }}</div>
-                            <div class="product-qty">{{ product.category }}</div>
-                            
-                            <div class="d-flex justify-content-between align-items-center mt-2">
-                                <div class="d-flex flex-column">
-                                    <span class="price-label">Per pack</span>
-                                    <span class="fw-bold">₹{{ product.price }}</span>
-                                </div>
-                                <div class="product-controls" data-product-id="{{ product._id }}">
-                                    <button type="button" class="btn btn-add btn-add-to-cart">ADD</button>
-                                    <div class="qty-controls d-none">
-                                        <button type="button" class="qty-btn btn-decrement">−</button>
-                                        <span class="qty-display">0</span>
-                                        <button type="button" class="qty-btn btn-increment">+</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <div class="action-row product-controls" data-product-id="{{ product._id }}">
+                    <button type="button" class="btn-add-to-cart">Add</button>
+                    <div class="qty-controls d-none">
+                        <button type="button" class="qty-btn btn-decrement">-</button>
+                        <span class="qty-display">0</span>
+                        <button type="button" class="qty-btn btn-increment">+</button>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-        </div>
-    </section>
-</div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const productControls = document.querySelectorAll('.product-controls');
-        
-        productControls.forEach(control => {
-            const productId = control.dataset.productId;
-            const addBtn = control.querySelector('.btn-add-to-cart');
-            const qtyControls = control.querySelector('.qty-controls');
-            const qtyDisplay = control.querySelector('.qty-display');
-            const incrementBtn = control.querySelector('.btn-increment');
-            const decrementBtn = control.querySelector('.btn-decrement');
-            
-            // Load initial quantity from localStorage
-            const savedQty = parseInt(localStorage.getItem(`product_${productId}`) || '0');
-            if (savedQty > 0) {
-                addBtn.classList.add('d-none');
-                qtyControls.classList.remove('d-none');
-                qtyDisplay.textContent = savedQty;
+document.addEventListener('DOMContentLoaded', function() {
+    const productControls = document.querySelectorAll('.product-controls');
+
+    productControls.forEach((control) => {
+        const productId = control.dataset.productId;
+        const addBtn = control.querySelector('.btn-add-to-cart');
+        const qtyControls = control.querySelector('.qty-controls');
+        const qtyDisplay = control.querySelector('.qty-display');
+        const incrementBtn = control.querySelector('.btn-increment');
+        const decrementBtn = control.querySelector('.btn-decrement');
+
+        const savedQty = parseInt(localStorage.getItem(`product_${productId}`) || '0', 10);
+        if (savedQty > 0) {
+            addBtn.classList.add('d-none');
+            qtyControls.classList.remove('d-none');
+            qtyDisplay.textContent = String(savedQty);
+        }
+
+        addBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch(`/add_to_cart/${productId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.ok) {
+                    addBtn.classList.add('d-none');
+                    qtyControls.classList.remove('d-none');
+                    qtyDisplay.textContent = '1';
+                    localStorage.setItem(`product_${productId}`, '1');
+                }
+            } catch (error) {
+                console.error('Error adding to cart:', error);
             }
-            
-            // Add to Cart button click
-            addBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                try {
-                    const response = await fetch(`/add_to_cart/${productId}`, {
-                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+        });
+
+        incrementBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const response = await fetch(`/cart/increment/${productId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.ok) {
+                    const currentQty = parseInt(qtyDisplay.textContent || '0', 10);
+                    const newQty = currentQty + 1;
+                    qtyDisplay.textContent = String(newQty);
+                    localStorage.setItem(`product_${productId}`, String(newQty));
+                }
+            } catch (error) {
+                console.error('Error incrementing cart:', error);
+            }
+        });
+
+        decrementBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                const currentQty = parseInt(qtyDisplay.textContent || '0', 10);
+                if (currentQty > 1) {
+                    const response = await fetch(`/cart/decrement/${productId}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     if (response.ok) {
-                        addBtn.classList.add('d-none');
-                        qtyControls.classList.remove('d-none');
-                        qtyDisplay.textContent = '1';
-                        localStorage.setItem(`product_${productId}`, '1');
+                        const newQty = currentQty - 1;
+                        qtyDisplay.textContent = String(newQty);
+                        localStorage.setItem(`product_${productId}`, String(newQty));
                     }
-                } catch (error) {
-                    console.error('Error adding to cart:', error);
-                }
-            });
-            
-            // Increment button
-            incrementBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                try {
-                    const response = await fetch(`/cart/increment/${productId}`, {
-                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                } else if (currentQty === 1) {
+                    const response = await fetch(`/remove_from_cart/${productId}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     if (response.ok) {
-                        const currentQty = parseInt(qtyDisplay.textContent) || 0;
-                        const newQty = currentQty + 1;
-                        qtyDisplay.textContent = newQty;
-                        localStorage.setItem(`product_${productId}`, newQty);
+                        addBtn.classList.remove('d-none');
+                        qtyControls.classList.add('d-none');
+                        qtyDisplay.textContent = '0';
+                        localStorage.removeItem(`product_${productId}`);
                     }
-                } catch (error) {
-                    console.error('Error incrementing cart:', error);
                 }
-            });
-            
-            // Decrement button
-            decrementBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
-                try {
-                    const currentQty = parseInt(qtyDisplay.textContent) || 0;
-                    if (currentQty > 1) {
-                        const response = await fetch(`/cart/decrement/${productId}`, {
-                            headers: {'X-Requested-With': 'XMLHttpRequest'}
-                        });
-                        if (response.ok) {
-                            const newQty = currentQty - 1;
-                            qtyDisplay.textContent = newQty;
-                            localStorage.setItem(`product_${productId}`, newQty);
-                        }
-                    } else if (currentQty === 1) {
-                        const response = await fetch(`/remove_from_cart/${productId}`, {
-                            headers: {'X-Requested-With': 'XMLHttpRequest'}
-                        });
-                        if (response.ok) {
-                            addBtn.classList.remove('d-none');
-                            qtyControls.classList.add('d-none');
-                            qtyDisplay.textContent = '0';
-                            localStorage.removeItem(`product_${productId}`);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error decrementing cart:', error);
-                }
-            });
+            } catch (error) {
+                console.error('Error decrementing cart:', error);
+            }
         });
     });
+});
 </script>
 {% endblock %}
