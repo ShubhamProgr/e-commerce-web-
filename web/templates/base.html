@@ -140,11 +140,61 @@
         }
 
         .site-footer {
-            padding: 1.6rem 0 2.2rem;
+            background: linear-gradient(180deg, var(--grain-100) 0%, #edf4eb 100%);
+            border-top: 1px solid rgba(79, 165, 114, 0.15);
+            padding: 4rem 0 2rem;
+            margin-top: 5rem;
             color: var(--ink-600);
-            font-weight: 600;
+        }
+        
+        .footer-brand .brand-mark {
+            width: 48px;
+            height: 48px;
+            font-size: 1.4rem;
+        }
+
+        .footer-brand .brand-title {
+            font-size: 1.6rem;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links a {
+            color: var(--ink-600);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--forest-900);
+        }
+
+        .footer-title {
+            font-family: 'Fraunces', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--forest-900);
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(33, 73, 51, 0.1);
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 0.9rem;
-            text-align: center;
+            font-weight: 600;
         }
 
         @keyframes shellReveal {
@@ -228,7 +278,54 @@
     </main>
 
     <footer class="site-footer">
-        Fresh harvest quality from Mota Anaj. Built for healthy daily kitchens.
+        <div class="container">
+            <div class="row gy-4 mb-4">
+                <div class="col-lg-4 footer-col pe-lg-5">
+                    <a class="d-flex align-items-center gap-3 text-decoration-none footer-brand mb-3" href="{{ url_for('index') }}">
+                        <span class="brand-mark"><i class="fa-solid fa-leaf"></i></span>
+                        <div>
+                            <span class="brand-title d-block mb-1 text-dark">Mota Anaj</span>
+                            <span class="brand-subtitle text-muted" style="letter-spacing: 0.15em;">Premium Green Staples</span>
+                        </div>
+                    </a>
+                    <p class="text-muted mt-3 fw-medium pe-lg-4" style="line-height: 1.6;">Our mission at Mota Anaj is bringing nature's finest healthy grains right to your modern kitchen, packed with purity and nutrition.</p>
+                </div>
+                <div class="col-lg-2 col-6 ms-lg-auto footer-col">
+                    <h5 class="footer-title">Explore</h5>
+                    <ul class="footer-links">
+                        <li><a href="{{ url_for('index') }}">Fresh Harvest</a></li>
+                        <li><a href="#">Best Sellers</a></li>
+                        <li><a href="#">Organic Groceries</a></li>
+                        <li><a href="#">Our Farms</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-6 footer-col">
+                    <h5 class="footer-title">Help</h5>
+                    <ul class="footer-links">
+                        <li><a href="#">Track Order</a></li>
+                        <li><a href="#">Returns & Policy</a></li>
+                        <li><a href="#">Contact Us</a></li>
+                        <li><a href="#">FAQs</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 footer-col">
+                    <h5 class="footer-title">Newsletter</h5>
+                    <p class="text-muted fw-medium mb-3">Subscribe for the latest farm fresh arrivals and exclusive green offers.</p>
+                    <div class="input-group subs-group bg-white p-1 rounded-pill border shadow-sm">
+                        <input type="email" class="form-control border-0 bg-transparent ms-2 shadow-none" placeholder="Your email..." aria-label="Subscribe">
+                        <button class="btn btn-dark rounded-pill px-4 align-items-center d-flex" type="button" style="background-color: var(--forest-900);"><i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom text-muted">
+                <div>&copy; 2026 Mota Anaj Premium Groceries. All Rights Reserved.</div>
+                <div class="d-flex gap-3 social-links">
+                    <a href="#" class="text-muted"><i class="fa-brands fa-instagram fs-5"></i></a>
+                    <a href="#" class="text-muted"><i class="fa-brands fa-facebook fs-5"></i></a>
+                    <a href="#" class="text-muted"><i class="fa-brands fa-twitter fs-5"></i></a>
+                </div>
+            </div>
+        </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

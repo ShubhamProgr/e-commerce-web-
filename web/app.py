@@ -10,7 +10,6 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import pymongo
-from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
 from bson.objectid import ObjectId
 import resend
 
@@ -22,32 +21,12 @@ app = Flask(__name__)
 app.secret_key = "your_secret_key_here" # Required for sessions
 
 uri = os.getenv("MONGO_URL")
-client = pymongo.MongoClient(
-    uri,
-    tlsCAFile=certifi.where(),
-    serverSelectionTimeoutMS=int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "10000")),
-    connectTimeoutMS=int(os.getenv("MONGO_CONNECT_TIMEOUT_MS", "10000")),
-    socketTimeoutMS=int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "20000")),
-    maxIdleTimeMS=int(os.getenv("MONGO_MAX_IDLE_TIME_MS", "60000")),
-    retryWrites=True,
-    appname="organic-pulse-web",
-)
+client = pymongo.MongoClient(uri, tlsCAFile=certifi.where())
 db = client["online_store"]
 USERS_COLLECTION = db["users"]
 ADMIN_COLLECTION = db["admin"]
 ORDER_COLLECTION = db["order"]
 STATUS_COLLECTION = db["status"]
-
-try:
-    # Trigger server selection once at startup so connectivity issues are visible early.
-    client.admin.command("ping")
-except ServerSelectionTimeoutError as exc:
-    app.logger.error(
-        "MongoDB ping failed at startup. Check MONGO_URL/network/TLS config. Error: %s",
-        exc,
-    )
-except PyMongoError as exc:
-    app.logger.error("MongoDB error during startup ping: %s", exc)
 
 # Login Manager Setup
 login_manager = LoginManager()
@@ -405,19 +384,6 @@ def datetime_display(value):
     if not display_value:
         return 'N/A'
     return display_value.strftime('%d %b %Y, %I:%M %p')
-
-
-@app.errorhandler(PyMongoError)
-def handle_pymongo_error(exc):
-    app.logger.exception("PyMongo request error: %s", exc)
-    if request.path.startswith('/debug/'):
-        return jsonify({
-            "error": "Database operation failed",
-            "detail": str(exc),
-        }), 503
-
-    flash('Database is temporarily unavailable. Please try again in a moment.', 'error')
-    return redirect(url_for('index'))
 
 
 def _ensure_normalized_collections():
