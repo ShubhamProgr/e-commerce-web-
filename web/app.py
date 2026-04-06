@@ -593,7 +593,7 @@ def _send_otp_via_resend(to_email: str, otp_code: str) -> bool:
     }
     
     data = {
-        "from": "onboarding@resend.dev", # MUST be this exact string in sandbox
+        "from": "Mota Anaj <auth@motaanaj.com>", # MUST be this exact string in sandbox
         "to": [recipient_email],         # MUST be your registered Resend email
         "subject": "Your QuickStore Verification Code",
         "html": f"<h3>Welcome!</h3><p>Your code is: <strong>{otp_code}</strong></p>"
@@ -1386,7 +1386,6 @@ def order_history():
         app.logger.error(f"Error retrieving order history: {e}")
         flash('An error occurred while retrieving your order history.', 'error')
         return redirect(url_for('view_cart'))
-
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
