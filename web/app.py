@@ -561,24 +561,14 @@ def _sanitize_env_value(value):
     cleaned = str(value).strip().strip('"').strip("'")
     return cleaned if cleaned else None
 
-
 def _get_resend_config():
-    sender_email = (
-        _sanitize_env_value(os.getenv("RESEND_FROM_EMAIL"))
-        or _sanitize_env_value(os.getenv("EMAIL_SENDER"))
-        or _sanitize_env_value(os.getenv("SMTP_USER"))
-    )
-    sender_name = _sanitize_env_value(os.getenv("RESEND_FROM_NAME")) or "Organic Pulse"
-
-    from_field = sender_email
-    if sender_email and sender_name:
-        from_field = f"{sender_name} <{sender_email}>"
-
+    # Render Dashboard variables override everything else
+    sender_email = os.getenv("RESEND_FROM_EMAIL") or os.getenv("EMAIL_SENDER")
+    sender_name = os.getenv("RESEND_FROM_NAME") or "Organic Pulse"
+    
     return {
-        "api_key": _sanitize_env_value(os.getenv("RESEND_API_KEY")),
-        "sender_email": sender_email,
-        "sender_name": sender_name,
-        "from_field": from_field,
+        "api_key": os.getenv("RESEND_API_KEY"),
+        "from_field": f"{sender_name} <{sender_email}>"
     }
 
 
