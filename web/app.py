@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import pymongo
 from bson.objectid import ObjectId
 import resend
+import razorpay
 
 #dummy comment to trigger redeploy
 # Load .env from project root (parent of web/) so SMTP and MONGO_URL are always found
@@ -19,6 +20,13 @@ _env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'
 load_dotenv(_env_path)
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here" # Required for sessions
+
+# Initialize Razorpay Client
+razorpay_client = None
+razorpay_key_id = os.getenv("RAZORPAY_KEY_ID")
+razorpay_key_secret = os.getenv("RAZORPAY_KEY_SECRET")
+if razorpay_key_id and razorpay_key_secret:
+    razorpay_client = razorpay.Client(auth=(razorpay_key_id, razorpay_key_secret))
 
 uri = os.getenv("MONGO_URL")
 client = pymongo.MongoClient(uri, tlsCAFile=certifi.where())
@@ -1280,6 +1288,55 @@ def checkout():
     return redirect(url_for('view_cart'))
 
 
+@app.route('/create-rzp-order', methods=['POST'])
+@login_required
+def create_rzp_order():
+    if current_user.role != 'customer':
+        return jsonify({"error": "Admin cannot place orders"}), 403
+    
+    user_object_id = _current_user_object_id()
+    user_data = USERS_COLLECTION.find_one({"_id": user_object_id})
+    cart_ids = user_data.get('cart', [])
+    if not cart_ids:
+        return jsonify({"error": "Cart is empty"}), 400
+
+    total_amount = 0
+    for pid in cart_ids:
+        try:
+            oid = pid if isinstance(pid, ObjectId) else ObjectId(pid)
+        except Exception:
+            continue
+        prod = db.catalog.find_one({"_id": oid})
+        if prod:
+            total_amount += prod.get('price', 0)
+    
+    if total_amount == 0:
+        return jsonify({"error": "Invalid cart amount"}), 400
+
+    if not razorpay_client:
+        return jsonify({"error": "Payment gateway not configured server-side"}), 500
+
+    try:
+        order_data = {
+            'amount': int(total_amount * 100),
+            'currency': 'INR',
+            'receipt': str(user_object_id)
+        }
+        order = razorpay_client.order.create(data=order_data)
+        
+        return jsonify({
+            "order_id": order['id'],
+            "amount": order['amount'],
+            "currency": order['currency'],
+            "key": razorpay_key_id,
+            "name": user_data.get('username'),
+            "email": user_data.get('email')
+        })
+    except Exception as e:
+        app.logger.error(f"Razorpay order creation failed: {e}")
+        return jsonify({"error": "Failed to create payment order"}), 500
+
+
 @app.route('/complete-order', methods=['POST'])
 @login_required
 def complete_order():
@@ -1292,6 +1349,26 @@ def complete_order():
         return redirect(url_for('admin_dashboard'))
     
     try:
+        # Razorpay Verification
+        razorpay_payment_id = request.form.get('razorpay_payment_id')
+        razorpay_order_id = request.form.get('razorpay_order_id')
+        razorpay_signature = request.form.get('razorpay_signature')
+        
+        if razorpay_client:
+            if not (razorpay_payment_id and razorpay_order_id and razorpay_signature):
+                flash("Incomplete payment details received.", 'error')
+                return redirect(url_for('view_cart'))
+            
+            try:
+                razorpay_client.utility.verify_payment_signature({
+                    'razorpay_order_id': razorpay_order_id,
+                    'razorpay_payment_id': razorpay_payment_id,
+                    'razorpay_signature': razorpay_signature
+                })
+            except razorpay.errors.SignatureVerificationError:
+                flash("Payment verification failed! Please contact support.", 'error')
+                return redirect(url_for('view_cart'))
+                
         # Get user data and cart
         user_object_id = _current_user_object_id()
         user_data = USERS_COLLECTION.find_one({"_id": user_object_id})
