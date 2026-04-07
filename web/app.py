@@ -17,7 +17,7 @@ import razorpay
 #dummy comment to trigger redeploy
 # Load .env from project root (parent of web/) so SMTP and MONGO_URL are always found
 _env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
-load_dotenv(_env_path)
+load_dotenv(_env_path, override=True)
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here" # Required for sessions
 
