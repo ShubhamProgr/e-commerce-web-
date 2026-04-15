@@ -242,6 +242,7 @@
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Shop</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('view_cart') }}">Cart</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('order_history') }}">Orders</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('apply_for_admin') }}" style="color: #e9cf72 !important;"><i class="fas fa-star"></i> Apply Admin</a></li>
                             {% elif current_user.role == 'admin' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('customers_info') }}">Customers</a></li>

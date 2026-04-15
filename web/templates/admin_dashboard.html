@@ -98,6 +98,39 @@
         overflow: auto;
     }
 
+    .btn-delete {
+        border: 0;
+        border-radius: 10px;
+        background: linear-gradient(140deg, #d32f2f, #f44336);
+        color: #fff;
+        font-weight: 800;
+        padding: 0.48rem 0.82rem;
+        cursor: pointer;
+        margin-left: 0.5rem;
+    }
+
+    .btn-delete:hover {
+        opacity: 0.9;
+    }
+
+    .product-img-thumb {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .edit-row-form {
+        display: contents;
+    }
+
+    .product-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        white-space: nowrap;
+    }
+
     .table thead th {
         font-size: 0.84rem;
         text-transform: uppercase;
@@ -196,7 +229,97 @@
 
     .cell-right {
         text-align: right;
-   }
+    }
+
+    .application-card {
+        border: 1px solid rgba(33, 73, 51, 0.14);
+        border-radius: 14px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #fff;
+    }
+
+    .application-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 1rem;
+        margin-bottom: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    .application-user {
+        font-weight: 600;
+        color: #1f3a2b;
+    }
+
+    .application-email {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .application-date {
+        color: #999;
+        font-size: 0.85rem;
+    }
+
+    .application-reason {
+        background: #f7faf4;
+        border-left: 4px solid var(--leaf-400);
+        padding: 0.75rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+        color: #555;
+    }
+
+    .application-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    .btn-approve,
+    .btn-reject {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-approve {
+        background: #22884a;
+        color: #fff;
+    }
+
+    .btn-approve:hover {
+        background: #1a6a38;
+        transform: translateY(-1px);
+    }
+
+    .btn-reject {
+        background: #b63a35;
+        color: #fff;
+    }
+
+    .btn-reject:hover {
+        background: #94302b;
+        transform: translateY(-1px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: #999;
+    }
+
+    .empty-state-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
 
     @media (max-width: 840px) {
         .order-row {
@@ -222,19 +345,20 @@
     <nav class="tab-head">
         <a class="tab-link {% if active_tab == 'inventory' %}active{% endif %}" href="{{ url_for('admin_dashboard', tab='inventory') }}">Inventory</a>
         <a class="tab-link {% if active_tab == 'orders' %}active{% endif %}" href="{{ url_for('admin_dashboard', tab='orders') }}">Orders</a>
+        <a class="tab-link {% if active_tab == 'applications' %}active{% endif %}" href="{{ url_for('admin_dashboard', tab='applications') }}">Admin Applications</a>
     </nav>
 
     <div class="tab-content-wrap">
         {% if active_tab == 'inventory' %}
             <div class="card-soft p-3 mb-3">
                 <h2 class="section-title">Add New Product</h2>
-                <form action="{{ url_for('add_product') }}" method="POST" class="row g-2">
+                <form action="{{ url_for('add_product') }}" method="POST" class="row g-2" enctype="multipart/form-data">
                     <div class="col-md-4"><input class="form-control form-input" type="text" name="item" placeholder="Product name" required></div>
                     <div class="col-md-4"><input class="form-control form-input" type="text" name="brand" placeholder="Brand/Farm" required></div>
                     <div class="col-md-4"><input class="form-control form-input" type="text" name="category" placeholder="Category" required></div>
                     <div class="col-md-3"><input class="form-control form-input" type="number" name="price" placeholder="Price" required></div>
                     <div class="col-md-3"><input class="form-control form-input" type="number" name="stock" placeholder="Stock" required></div>
-                    <div class="col-md-6"><input class="form-control form-input" type="url" name="image" placeholder="Image URL (optional)"></div>
+                    <div class="col-md-6"><input class="form-control form-input" type="file" name="image_file" accept=".png,.jpg,.jpeg,.gif,.webp" placeholder="Upload product image (optional)"></div>
                     <div class="col-12 text-end"><button class="btn-primary-admin" type="submit">Add Product</button></div>
                 </form>
             </div>
@@ -244,29 +368,42 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Image</th>
                             <th>Product</th>
+                            <th>Brand</th>
                             <th>Category</th>
                             <th>Price</th>
                             <th>Stock</th>
-                            <th class="text-end">Action</th>
+                            <th>Update Image</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for product in products %}
                         <tr>
-                            <form action="{{ url_for('edit_product', id=product._id) }}" method="POST">
-                                <td>{{ product.item }}</td>
-                                <td>{{ product.category }}</td>
+                            <form class="edit-row-form" action="{{ url_for('edit_product', id=product._id) }}" method="POST" enctype="multipart/form-data">
+                                <td><img src="{{ product.image }}" alt="{{ product.item }}" class="product-img-thumb" onerror="this.src='https://placehold.co/60x60?text=No+Image'"></td>
+                                <td><input class="form-control form-input form-control-sm" type="text" name="item" value="{{ product.item }}" required></td>
+                                <td><input class="form-control form-input form-control-sm" type="text" name="brand" value="{{ product.brand or '' }}" required></td>
+                                <td><input class="form-control form-input form-control-sm" type="text" name="category" value="{{ product.category }}" required></td>
                                 <td><input class="form-control form-input form-control-sm" style="max-width:100px;" type="number" name="price" value="{{ product.price }}" required></td>
                                 <td><input class="form-control form-input form-control-sm" style="max-width:90px;" type="number" name="stock" value="{{ product.stock }}" required></td>
-                                <td class="text-end"><button class="btn-update" type="submit">Update</button></td>
+                                <td><input class="form-control form-input form-control-sm" type="file" name="image_file" accept=".png,.jpg,.jpeg,.gif,.webp" placeholder="Upload new image (optional)"></td>
+                                <td class="text-end">
+                                    <div class="product-actions">
+                                        <button class="btn-update" type="submit">Update</button>
+                                        <form method="POST" action="{{ url_for('delete_product', id=product._id) }}" style="display:inline;" onsubmit="return confirm('Delete this product? It will be removed from all carts.');">
+                                            <button class="btn-delete" type="submit">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </form>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        {% else %}
+        {% elif active_tab == 'orders' %}
             <div class="stats-grid">
                 <div class="stats-card"><div class="stats-label">Active Orders</div><div class="stats-value">{{ order_metrics.total_orders }}</div></div>
                 <div class="stats-card"><div class="stats-label">Placed</div><div class="stats-value">{{ order_metrics.placed_orders }}</div></div>
@@ -317,6 +454,45 @@
                 {% endfor %}
             {% else %}
                 <div class="alert alert-info mb-0">No active orders found.</div>
+            {% endif %}
+        {% elif active_tab == 'applications' %}
+            <h2 class="section-title">Admin Applications</h2>
+            
+            {% if applications %}
+                {% for app in applications %}
+                <article class="application-card">
+                    <div class="application-header">
+                        <div>
+                            <div class="application-user">{{ app.username }}</div>
+                            <div class="application-email">{{ app.email }}</div>
+                            <div class="application-date">Applied on {{ app.applied_at|datetime_display }}</div>
+                        </div>
+                    </div>
+
+                    <div class="application-reason">
+                        <strong>Reason:</strong><br>
+                        {{ app.reason }}
+                    </div>
+
+                    <div class="application-actions">
+                        <form method="POST" action="{{ url_for('approve_admin_application', app_id=app._id) }}" style="display: inline;">
+                            <button type="submit" class="btn-approve" onclick="return confirm('Approve this admin application?')">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('reject_admin_application', app_id=app._id) }}" style="display: inline;">
+                            <button type="submit" class="btn-reject" onclick="return confirm('Reject this admin application?')">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </form>
+                    </div>
+                </article>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
+                    <p>No pending admin applications.</p>
+                </div>
             {% endif %}
         {% endif %}
     </div>

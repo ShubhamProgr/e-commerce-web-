@@ -5,9 +5,10 @@ import random
 import smtplib
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import pymongo
 from bson.objectid import ObjectId
@@ -20,6 +21,17 @@ _env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'
 load_dotenv(_env_path, override=True)
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here" # Required for sessions
+
+# Configure uploads folder
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+# Create uploads folder if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 # Initialize Razorpay Client
 razorpay_client = None
@@ -35,6 +47,7 @@ USERS_COLLECTION = db["users"]
 ADMIN_COLLECTION = db["admin"]
 ORDER_COLLECTION = db["order"]
 STATUS_COLLECTION = db["status"]
+ADMIN_APPLICATIONS_COLLECTION = db["admin_applications"]
 
 # Login Manager Setup
 login_manager = LoginManager()
@@ -169,6 +182,32 @@ def _merge_guest_cart_into_user(user_id):
 
     session.pop('guest_cart', None)
     session.modified = True
+
+
+def _allowed_file(filename):
+    """Check if the file extension is allowed."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _save_uploaded_file(file):
+    """Save uploaded file and return the filename/URL."""
+    if not file or file.filename == '':
+        return None
+    
+    if not _allowed_file(file.filename):
+        return None
+    
+    # Create a secure filename
+    filename = secure_filename(file.filename)
+    # Add timestamp to prevent filename conflicts
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+    filename = timestamp + filename
+    
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+    
+    # Return the URL path for the image
+    return f"/uploads/{filename}"
 
 
 def _get_post_login_redirect():
@@ -693,6 +732,12 @@ def _clear_guest_cart_on_new_session():
             session.modified = True
 
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Serve uploaded product images."""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
 # --- PUBLIC ROUTES ---
 @app.route('/')
 def index():
@@ -839,6 +884,43 @@ def debug_resend_test():
 
     return jsonify(result)
 
+
+# --- ADMIN APPLICATIONS HELPER ---
+def _build_admin_applications_dashboard():
+    """Fetch pending admin applications with user details."""
+    applications = list(ADMIN_APPLICATIONS_COLLECTION.find({"status": "pending"}).sort("applied_at", -1))
+    
+    # Enrich applications with user data
+    enriched_apps = []
+    for app in applications:
+        user_id = _coerce_object_id(app.get('user_id'))
+        user_data = USERS_COLLECTION.find_one({"_id": user_id}) if user_id else None
+        
+        if user_data:
+            enriched_apps.append({
+                "_id": app['_id'],
+                "user_id": user_id,
+                "username": user_data.get('username', 'N/A'),
+                "email": user_data.get('email', 'N/A'),
+                "reason": app.get('reason', ''),
+                "applied_at": app.get('applied_at', datetime.utcnow()),
+                "status": app.get('status', 'pending'),
+            })
+    
+    return enriched_apps
+
+
+def _has_pending_application(user_id):
+    """Check if a user has a pending application."""
+    user_object_id = _coerce_object_id(user_id)
+    if not user_object_id:
+        return False
+    return bool(ADMIN_APPLICATIONS_COLLECTION.find_one({
+        "user_id": user_object_id,
+        "status": "pending"
+    }))
+
+
 # --- ADMIN ROUTES ---
 @app.route('/admin/dashboard')
 @login_required
@@ -847,10 +929,12 @@ def admin_dashboard():
         return "Access Denied", 403
     products = list(db.catalog.find())
     active_tab = request.args.get('tab', 'inventory')
-    if active_tab not in {'inventory', 'orders'}:
+    if active_tab not in {'inventory', 'orders', 'applications'}:
         active_tab = 'inventory'
 
     orders, order_metrics = _build_orders_dashboard()
+    applications = _build_admin_applications_dashboard()
+    
     status_options = [
         {"value": status, "label": ORDER_STATUS_LABELS[status]}
         for status in ORDER_STATUS_FLOW
@@ -860,6 +944,7 @@ def admin_dashboard():
         products=products,
         orders=orders,
         order_metrics=order_metrics,
+        applications=applications,
         status_options=status_options,
         active_tab=active_tab,
     )
@@ -933,6 +1018,162 @@ def make_admin(user_id):
             USERS_COLLECTION.delete_one({"_id": admin_doc['_id']})
             flash("User promoted to Admin")
     return redirect(url_for('manage_users'))
+
+@app.route('/apply-for-admin', methods=['GET', 'POST'])
+@login_required
+def apply_for_admin():
+    """Allow customers to apply to become admin."""
+    if current_user.role != 'customer':
+        flash("Only customers can apply to become admin.", 'warning')
+        return redirect(url_for('index'))
+    
+    user_id = _coerce_object_id(current_user.id)
+    if not user_id:
+        flash("Invalid user session.", 'error')
+        return redirect(url_for('index'))
+    
+    # Check if already has pending application
+    if _has_pending_application(user_id):
+        flash("You already have a pending admin application.", 'warning')
+        return redirect(url_for('index'))
+    
+    # Check if already an admin (shouldn't happen, but safety check)
+    if current_user.role == 'admin':
+        flash("You are already an admin.", 'info')
+        return redirect(url_for('admin_dashboard'))
+    
+    if request.method == 'GET':
+        return render_template('apply_for_admin.html')
+    
+    # POST: Submit application
+    reason = (request.form.get('reason') or '').strip()
+    
+    if not reason or len(reason) < 10:
+        flash("Please provide a reason of at least 10 characters.", 'error')
+        return render_template('apply_for_admin.html')
+    
+    try:
+        application = {
+            "_id": ObjectId(),
+            "user_id": user_id,
+            "reason": reason,
+            "status": "pending",
+            "applied_at": datetime.utcnow(),
+            "reviewed_at": None,
+            "reviewed_by": None,
+            "decision": None,
+        }
+        ADMIN_APPLICATIONS_COLLECTION.insert_one(application)
+        flash("Your admin application has been submitted! Admins will review it shortly.", 'success')
+        return redirect(url_for('index'))
+    except Exception as e:
+        app.logger.error(f"Error submitting admin application: {e}")
+        flash("An error occurred while submitting your application. Please try again.", 'error')
+        return render_template('apply_for_admin.html')
+
+@app.route('/admin/application/<app_id>/approve', methods=['POST'])
+@login_required
+def approve_admin_application(app_id):
+    """Approve an admin application and promote the user."""
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    
+    app_object_id = _coerce_object_id(app_id)
+    if not app_object_id:
+        flash('Invalid application reference.', 'error')
+        return redirect(url_for('admin_dashboard', tab='applications'))
+    
+    try:
+        # Find the application
+        application = ADMIN_APPLICATIONS_COLLECTION.find_one({"_id": app_object_id})
+        if not application:
+            flash('Application not found.', 'warning')
+            return redirect(url_for('admin_dashboard', tab='applications'))
+        
+        if application['status'] != 'pending':
+            flash('This application has already been processed.', 'info')
+            return redirect(url_for('admin_dashboard', tab='applications'))
+        
+        # Find the user
+        user_id = _coerce_object_id(application.get('user_id'))
+        user_doc = USERS_COLLECTION.find_one({"_id": user_id})
+        
+        if not user_doc:
+            flash('User not found.', 'error')
+            return redirect(url_for('admin_dashboard', tab='applications'))
+        
+        # Promote user to admin
+        admin_doc = dict(user_doc)
+        admin_doc['role'] = 'admin'
+        admin_doc['promoted_at'] = datetime.utcnow()
+        
+        ADMIN_COLLECTION.replace_one({"_id": admin_doc['_id']}, admin_doc, upsert=True)
+        USERS_COLLECTION.delete_one({"_id": admin_doc['_id']})
+        
+        # Update application status
+        ADMIN_APPLICATIONS_COLLECTION.update_one(
+            {"_id": app_object_id},
+            {
+                "$set": {
+                    "status": "approved",
+                    "reviewed_at": datetime.utcnow(),
+                    "reviewed_by": current_user.username,
+                    "decision": "approved",
+                }
+            }
+        )
+        
+        flash(f"User '{user_doc.get('username')}' has been promoted to admin!", 'success')
+        
+    except Exception as exc:
+        app.logger.error(f"Error approving admin application: {exc}")
+        flash('An error occurred while approving the application.', 'error')
+    
+    return redirect(url_for('admin_dashboard', tab='applications'))
+
+@app.route('/admin/application/<app_id>/reject', methods=['POST'])
+@login_required
+def reject_admin_application(app_id):
+    """Reject an admin application."""
+    if current_user.role != 'admin':
+        return "Access Denied", 403
+    
+    app_object_id = _coerce_object_id(app_id)
+    if not app_object_id:
+        flash('Invalid application reference.', 'error')
+        return redirect(url_for('admin_dashboard', tab='applications'))
+    
+    try:
+        # Find the application
+        application = ADMIN_APPLICATIONS_COLLECTION.find_one({"_id": app_object_id})
+        if not application:
+            flash('Application not found.', 'warning')
+            return redirect(url_for('admin_dashboard', tab='applications'))
+        
+        if application['status'] != 'pending':
+            flash('This application has already been processed.', 'info')
+            return redirect(url_for('admin_dashboard', tab='applications'))
+        
+        # Update application status
+        ADMIN_APPLICATIONS_COLLECTION.update_one(
+            {"_id": app_object_id},
+            {
+                "$set": {
+                    "status": "rejected",
+                    "reviewed_at": datetime.utcnow(),
+                    "reviewed_by": current_user.username,
+                    "decision": "rejected",
+                }
+            }
+        )
+        
+        flash('Admin application has been rejected.', 'success')
+        
+    except Exception as exc:
+        app.logger.error(f"Error rejecting admin application: {exc}")
+        flash('An error occurred while rejecting the application.', 'error')
+    
+    return redirect(url_for('admin_dashboard', tab='applications'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -1083,14 +1324,76 @@ def resend_otp():
 @app.route('/admin/edit/<id>', methods=['POST'])
 @login_required
 def edit_product(id):
-    if current_user.role == 'admin':
-        new_price = int(request.form.get('price'))
-        new_stock = int(request.form.get('stock'))
+    if current_user.role != 'admin':
+        flash('Access Denied', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    try:
+        # Get existing product to preserve image if not uploading new one
+        existing_product = db.catalog.find_one({"_id": ObjectId(id)})
+        if not existing_product:
+            flash('Product not found', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Handle image upload or keep existing
+        image_url = existing_product.get('image', "https://placehold.co/400x400?text=No+Image")
+        if 'image_file' in request.files:
+            image_file = request.files['image_file']
+            if image_file and image_file.filename != '':
+                new_image_url = _save_uploaded_file(image_file)
+                if new_image_url:
+                    image_url = new_image_url
+                else:
+                    flash('Invalid image file. Please use PNG, JPG, JPEG, GIF, or WebP format.', 'warning')
+        
+        update_data = {
+            "item": request.form.get('item'),
+            "brand": request.form.get('brand'),
+            "category": request.form.get('category'),
+            "price": int(request.form.get('price')),
+            "stock": int(request.form.get('stock')),
+            "image": image_url
+        }
+        
         db.catalog.update_one(
             {"_id": ObjectId(id)},
-            {"$set": {"price": new_price, "stock": new_stock}}
+            {"$set": update_data}
         )
-        flash('Product updated successfully')
+        flash('Product updated successfully', 'success')
+    except Exception as e:
+        app.logger.error(f"Error updating product: {e}")
+        flash('Error updating product', 'error')
+    
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/delete/<id>', methods=['POST'])
+@login_required
+def delete_product(id):
+    if current_user.role != 'admin':
+        flash('Access Denied', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    try:
+        product = db.catalog.find_one({"_id": ObjectId(id)})
+        if not product:
+            flash('Product not found', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Delete the product from catalog
+        db.catalog.delete_one({"_id": ObjectId(id)})
+        
+        # Remove from any active carts
+        object_id = ObjectId(id)
+        USERS_COLLECTION.update_many(
+            {"cart": object_id},
+            {"$pull": {"cart": object_id}}
+        )
+        
+        flash(f'Product "{product.get("item")}" deleted successfully', 'success')
+    except Exception as e:
+        app.logger.error(f"Error deleting product: {e}")
+        flash('Error deleting product', 'error')
+    
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/add-product', methods=['POST'])
@@ -1099,13 +1402,27 @@ def add_product():
     if current_user.role != 'admin':
         return "Access Denied", 403
     
+    # Handle image upload
+    image_url = None
+    if 'image_file' in request.files:
+        image_file = request.files['image_file']
+        if image_file and image_file.filename != '':
+            image_url = _save_uploaded_file(image_file)
+            if not image_url:
+                flash('Invalid image file. Please use PNG, JPG, JPEG, GIF, or WebP format.', 'error')
+                return redirect(url_for('admin_dashboard'))
+    
+    # Fallback to placeholder if no image provided
+    if not image_url:
+        image_url = "https://placehold.co/400x400?text=No+Image"
+    
     new_item = {
         "item": request.form.get('item'),
         "brand": request.form.get('brand'),
         "category": request.form.get('category'),
         "price": int(request.form.get('price')),
         "stock": int(request.form.get('stock')),
-        "image": request.form.get('image') or "https://placehold.co/400x400?text=No+Image"
+        "image": image_url
     }
     
     db.catalog.insert_one(new_item)

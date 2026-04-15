@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Apply to Become Admin | Mota Anaj{% endblock %}
+
+{% block extra_head %}
+<style>
+    .apply-container {
+        max-width: 600px;
+        margin: 3rem auto;
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid rgba(33, 73, 51, 0.14);
+        box-shadow: 0 14px 28px rgba(24, 49, 34, 0.09);
+        padding: 2.5rem;
+    }
+
+    .apply-title {
+        font-family: 'Fraunces', serif;
+        font-size: 1.8rem;
+        color: #1f3a2b;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
+    .apply-subtitle {
+        color: #666;
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #1f3a2b;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .form-textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid rgba(33, 73, 51, 0.25);
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: #333;
+        resize: vertical;
+        min-height: 120px;
+        box-sizing: border-box;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-textarea:focus {
+        outline: none;
+        border-color: var(--leaf-600);
+        box-shadow: 0 0 0 3px rgba(33, 73, 51, 0.1);
+    }
+
+    .form-info {
+        background: #f7faf4;
+        border-left: 4px solid var(--leaf-400);
+        padding: 1rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        color: #555;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #1f3a2b 0%, #2a5a3d 100%);
+        color: #fff;
+        border: 1px solid #1f3a2b;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(31, 58, 43, 0.3);
+    }
+
+    .btn-secondary {
+        background: #fff;
+        color: #1f3a2b;
+        border: 1px solid rgba(33, 73, 51, 0.25);
+    }
+
+    .btn-secondary:hover {
+        background: #f7faf4;
+        border-color: rgba(33, 73, 51, 0.4);
+    }
+
+    .char-count {
+        font-size: 0.85rem;
+        color: #999;
+        margin-top: 0.3rem;
+    }
+
+    .error {
+        color: #d32f2f;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="apply-container">
+    <h1 class="apply-title">Become an Admin</h1>
+    <p class="apply-subtitle">Tell us why you'd like to manage our platform</p>
+
+    <div class="form-info">
+        <strong>Why apply?</strong>
+        <p style="margin: 0.5rem 0 0 0;">As an admin, you'll help manage products, orders, and the platform's growth. We're looking for passionate community members who want to contribute!</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('apply_for_admin') }}">
+        <div class="form-group">
+            <label class="form-label" for="reason">Why do you want to become an admin?</label>
+            <textarea 
+                class="form-textarea" 
+                id="reason" 
+                name="reason" 
+                required
+                placeholder="Share your experience, motivation, and how you plan to contribute to our community..."
+                minlength="10"
+                maxlength="1000"
+                onkeyup="updateCharCount(this)"
+            ></textarea>
+            <div class="char-count">
+                <span id="charCount">0</span> / 1000 characters
+            </div>
+        </div>
+
+        <div class="form-buttons">
+            <button type="submit" class="btn btn-primary">Submit Application</button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    function updateCharCount(textarea) {
+        document.getElementById('charCount').textContent = textarea.value.length;
+    }
+</script>
+{% endblock %}
