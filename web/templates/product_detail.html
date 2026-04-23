@@ -59,12 +59,47 @@
         font-weight: 800;
     }
 
+    .title-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
     .item-title {
         font-family: 'Fraunces', serif;
         color: #1f3a2b;
         margin: 0;
         line-height: 1.12;
         font-size: clamp(1.8rem, 4vw, 2.6rem);
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .wishlist-btn-detail {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 2px solid #d9534f;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #d9534f;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .wishlist-btn-detail:hover {
+        transform: scale(1.1);
+        background: #f5e6e6;
+    }
+
+    .wishlist-btn-detail[data-in-wishlist="true"] i {
+        font-weight: 900;
     }
 
     .source-line {
@@ -174,7 +209,12 @@
                 <div class="info-pane">
                     <a class="crumb-link" href="{{ url_for('index') }}"><i class="fa-solid fa-arrow-left"></i> Back to products</a>
                     <div class="category-pill">{{ product.category }}</div>
-                    <h1 class="item-title">{{ product.item }}</h1>
+                    <div class="title-row">
+                        <h1 class="item-title">{{ product.item }}</h1>
+                        <button class="wishlist-btn-detail" data-product-id="{{ product._id }}" {% if is_in_wishlist %}data-in-wishlist="true"{% endif %} title="Add to wishlist">
+                            <i class="fa-{% if is_in_wishlist %}solid{% else %}regular{% endif %} fa-heart"></i>
+                        </button>
+                    </div>
                     <p class="source-line">From {{ product.brand }}</p>
 
                     <div class="price-block">
@@ -201,4 +241,49 @@
         </div>
     </article>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const wishlistBtn = document.querySelector('.wishlist-btn-detail');
+    
+    if (wishlistBtn) {
+        wishlistBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const productId = wishlistBtn.dataset.productId;
+            const isInWishlist = wishlistBtn.getAttribute('data-in-wishlist') === 'true';
+            const endpoint = isInWishlist ? `/remove-from-wishlist/${productId}` : `/add-to-wishlist/${productId}`;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Toggle the wishlist state
+                        if (isInWishlist) {
+                            wishlistBtn.removeAttribute('data-in-wishlist');
+                            wishlistBtn.querySelector('i').classList.remove('fa-solid');
+                            wishlistBtn.querySelector('i').classList.add('fa-regular');
+                        } else {
+                            wishlistBtn.setAttribute('data-in-wishlist', 'true');
+                            wishlistBtn.querySelector('i').classList.remove('fa-regular');
+                            wishlistBtn.querySelector('i').classList.add('fa-solid');
+                        }
+                    }
+                } else if (response.status === 403) {
+                    // Not authenticated or not a customer
+                    window.location.href = "{{ url_for('login', next=url_for('product_detail', id=product._id)) }}";
+                }
+            } catch (error) {
+                console.error('Error updating wishlist:', error);
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

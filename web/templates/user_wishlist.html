@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}My Wishlist | Mota Anaj{% endblock %}
+
+{% block extra_head %}
+<style>
+    .wishlist-container {
+        max-width: 1200px;
+        margin: 2rem auto;
+    }
+
+    .wishlist-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2.5rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, rgba(43, 103, 69, 0.1), rgba(79, 165, 114, 0.08));
+        border-radius: 18px;
+        border: 1px solid rgba(79, 165, 114, 0.2);
+    }
+
+    .wishlist-header i {
+        font-size: 2rem;
+        color: var(--leaf-500);
+    }
+
+    .wishlist-header h1 {
+        margin: 0;
+        color: var(--forest-900);
+        font-family: 'Fraunces', serif;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: var(--surface);
+        border-radius: 18px;
+        border: 1px solid rgba(79, 165, 114, 0.15);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--leaf-400);
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .empty-state h3 {
+        color: var(--forest-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: var(--ink-600);
+        margin-bottom: 2rem;
+    }
+
+    .empty-state a {
+        display: inline-block;
+        padding: 0.8rem 2rem;
+        background: linear-gradient(135deg, var(--forest-800), var(--leaf-500));
+        color: white;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 800;
+        transition: all 0.3s ease;
+    }
+
+    .empty-state a:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(79, 165, 114, 0.3);
+    }
+
+    .wishlist-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .wishlist-item {
+        background: var(--surface);
+        border: 1px solid rgba(79, 165, 114, 0.12);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wishlist-item:hover {
+        transform: translateY(-6px);
+        border-color: rgba(79, 165, 114, 0.25);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+    }
+
+    .wishlist-media {
+        position: relative;
+        height: 180px;
+        background: linear-gradient(160deg, #f8f9f6 0%, #e9efe4 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    }
+
+    .wishlist-media img {
+        max-width: 90%;
+        max-height: 150px;
+        object-fit: contain;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+        transition: transform 0.3s ease;
+    }
+
+    .wishlist-item:hover .wishlist-media img {
+        transform: scale(1.05);
+    }
+
+    .remove-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(233, 92, 92, 0.9);
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        opacity: 0;
+    }
+
+    .wishlist-item:hover .remove-btn {
+        opacity: 1;
+    }
+
+    .remove-btn:hover {
+        background: #e95c5c;
+        transform: scale(1.1);
+    }
+
+    .wishlist-body {
+        padding: 1.2rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wishlist-name {
+        margin: 0 0 0.5rem;
+        font-weight: 800;
+        color: var(--forest-900);
+        font-size: 1rem;
+        line-height: 1.3;
+    }
+
+    .wishlist-category {
+        color: var(--leaf-500);
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.8rem;
+    }
+
+    .wishlist-price {
+        color: var(--forest-900);
+        font-weight: 800;
+        font-size: 1.2rem;
+        margin-top: auto;
+        margin-bottom: 0.8rem;
+    }
+
+    .wishlist-price::before {
+        content: '₹';
+        font-size: 0.9rem;
+        margin-right: 2px;
+    }
+
+    .add-to-cart-btn {
+        width: 100%;
+        padding: 0.7rem;
+        background: linear-gradient(135deg, var(--forest-800), var(--leaf-500));
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .add-to-cart-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(79, 165, 114, 0.25);
+    }
+
+    @media (max-width: 768px) {
+        .wishlist-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wishlist-container">
+    <div class="wishlist-header">
+        <i class="fas fa-heart"></i>
+        <h1>My Wishlist</h1>
+    </div>
+
+    {% if wishlist_items|length == 0 %}
+    <div class="empty-state">
+        <i class="fas fa-heart"></i>
+        <h3>Your wishlist is empty</h3>
+        <p>Start adding your favorite products to your wishlist!</p>
+        <a href="{{ url_for('index') }}">Continue Shopping</a>
+    </div>
+    {% else %}
+    <div class="wishlist-grid">
+        {% for product in wishlist_items %}
+        <div class="wishlist-item">
+            <div class="wishlist-media">
+                <button type="button" class="remove-btn" onclick="removeFromWishlist('{{ product._id }}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <img src="{{ product.image }}" alt="{{ product.item }}">
+            </div>
+            <div class="wishlist-body">
+                <h3 class="wishlist-name">{{ product.item }}</h3>
+                <p class="wishlist-category">{{ product.category }}</p>
+                <div class="wishlist-price">₹{{ product.price }}</div>
+                <a href="{{ url_for('product_detail', id=product._id) }}" class="add-to-cart-btn">
+                    <i class="fas fa-eye"></i> View Product
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function removeFromWishlist(productId) {
+        if (confirm('Remove this item from your wishlist?')) {
+            fetch(`/remove-from-wishlist/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to remove item from wishlist');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

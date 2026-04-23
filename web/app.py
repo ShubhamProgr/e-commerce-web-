@@ -527,6 +527,25 @@ def _current_user_object_id():
     return _coerce_object_id(raw_user_id)
 
 
+def _is_product_in_wishlist(product_id):
+    """Check if a product is in the current user's wishlist."""
+    if not current_user.is_authenticated or current_user.role != 'customer':
+        return False
+    
+    user_id = _current_user_object_id()
+    product_oid = _coerce_object_id(product_id)
+    
+    if not user_id or not product_oid:
+        return False
+    
+    wishlist_doc = WISHLIST_COLLECTION.find_one({"user_id": user_id})
+    if not wishlist_doc:
+        return False
+    
+    items = wishlist_doc.get('items', [])
+    return any(str(item) == str(product_oid) for item in items)
+
+
 def _upsert_order_status(order_id, user_id, status, updated_at=None):
     normalized_status = _normalize_order_status(status)
     timestamp = _normalize_datetime(updated_at) or datetime.utcnow()
@@ -742,12 +761,22 @@ def uploaded_file(filename):
 @app.route('/')
 def index():
     products = list(db.catalog.find())
-    return render_template('index.html', products=products)
+    # Get wishlist status for each product
+    wishlist_data = {}
+    if current_user.is_authenticated and current_user.role == 'customer':
+        user_id = _current_user_object_id()
+        wishlist_doc = WISHLIST_COLLECTION.find_one({"user_id": user_id})
+        if wishlist_doc:
+            for item_id in wishlist_doc.get('items', []):
+                wishlist_data[str(item_id)] = True
+    
+    return render_template('index.html', products=products, wishlist_data=wishlist_data)
 
 @app.route('/product/<id>')
 def product_detail(id):
     product = db.catalog.find_one({"_id": ObjectId(id)})
-    return render_template('product_detail.html', product=product)
+    is_in_wishlist = _is_product_in_wishlist(id) if product else False
+    return render_template('product_detail.html', product=product, is_in_wishlist=is_in_wishlist)
 
 # --- AUTH ROUTES ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -1374,19 +1403,24 @@ def delete_product(id):
         return redirect(url_for('admin_dashboard'))
     
     try:
-        product = db.catalog.find_one({"_id": ObjectId(id)})
+        # Validate product_id first
+        product_oid = _coerce_object_id(id)
+        if not product_oid:
+            flash('Invalid product ID', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        product = db.catalog.find_one({"_id": product_oid})
         if not product:
             flash('Product not found', 'error')
             return redirect(url_for('admin_dashboard'))
         
         # Delete the product from catalog
-        db.catalog.delete_one({"_id": ObjectId(id)})
+        db.catalog.delete_one({"_id": product_oid})
         
         # Remove from any active carts
-        object_id = ObjectId(id)
         USERS_COLLECTION.update_many(
-            {"cart": object_id},
-            {"$pull": {"cart": object_id}}
+            {"cart": product_oid},
+            {"$pull": {"cart": product_oid}}
         )
         
         flash(f'Product "{product.get("item")}" deleted successfully', 'success')
@@ -1504,11 +1538,19 @@ def remove_from_cart(product_id):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
     try:
+        # Validate product_id first
+        product_oid = _coerce_object_id(product_id)
+        if not product_oid:
+            if is_ajax:
+                return jsonify({'error': 'Invalid product ID'}), 400
+            flash('Invalid product ID.')
+            return redirect(url_for('view_cart'))
+        
         # remove all occurrences (delete item completely)
         if current_user.is_authenticated and current_user.role == 'customer':
             USERS_COLLECTION.update_one(
                 {"_id": _current_user_object_id()},
-                {"$pull": {"cart": ObjectId(product_id)}}
+                {"$pull": {"cart": product_oid}}
             )
         elif current_user.is_authenticated and current_user.role != 'customer':
             if is_ajax:
@@ -1530,6 +1572,7 @@ def remove_from_cart(product_id):
         app.logger.error(f"Error removing from cart: {e}")
         if is_ajax:
             return jsonify({'error': str(e)}), 500
+        flash('Error removing item from cart.')
         return redirect(url_for('view_cart'))
 
 
@@ -1539,9 +1582,17 @@ def increment_cart(product_id):
     
     try:
         if current_user.is_authenticated and current_user.role == 'customer':
+            # Validate product_id first
+            product_oid = _coerce_object_id(product_id)
+            if not product_oid:
+                if is_ajax:
+                    return jsonify({'error': 'Invalid product ID'}), 400
+                flash('Invalid product ID.')
+                return redirect(url_for('view_cart'))
+            
             USERS_COLLECTION.update_one(
                 {"_id": _current_user_object_id()},
-                {"$push": {"cart": ObjectId(product_id)}}
+                {"$push": {"cart": product_oid}}
             )
         elif not current_user.is_authenticated:
             guest_cart = _get_guest_cart()
@@ -1555,6 +1606,7 @@ def increment_cart(product_id):
         app.logger.error(f"Error incrementing cart: {e}")
         if is_ajax:
             return jsonify({'error': str(e)}), 500
+        flash('Error adding item to cart.')
         return redirect(url_for('view_cart'))
 
 
@@ -1564,11 +1616,19 @@ def decrement_cart(product_id):
     
     try:
         if current_user.is_authenticated and current_user.role == 'customer':
+            # Validate product_id first
+            product_oid = _coerce_object_id(product_id)
+            if not product_oid:
+                if is_ajax:
+                    return jsonify({'error': 'Invalid product ID'}), 400
+                flash('Invalid product ID.')
+                return redirect(url_for('view_cart'))
+            
             user_data = USERS_COLLECTION.find_one({"_id": _current_user_object_id()})
             cart_list = user_data.get('cart', [])
             # remove first matching occurrence
             for idx, val in enumerate(cart_list):
-                if (isinstance(val, ObjectId) and str(val) == product_id) or (str(val) == product_id):
+                if (isinstance(val, ObjectId) and val == product_oid) or (str(val) == str(product_oid)):
                     cart_list.pop(idx)
                     break
             USERS_COLLECTION.update_one({"_id": _current_user_object_id()}, {"$set": {"cart": cart_list}})
@@ -1585,6 +1645,7 @@ def decrement_cart(product_id):
         app.logger.error(f"Error decrementing cart: {e}")
         if is_ajax:
             return jsonify({'error': str(e)}), 500
+        flash('Error removing item from cart.')
         return redirect(url_for('view_cart'))
 
 
@@ -1780,6 +1841,301 @@ def order_history():
         app.logger.error(f"Error retrieving order history: {e}")
         flash('An error occurred while retrieving your order history.', 'error')
         return redirect(url_for('view_cart'))
+
+
+# --- USER PROFILE & SECURITY ROUTES ---
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def user_profile():
+    """
+    User profile and security settings: change password, email, username.
+    """
+    if current_user.role not in ['customer', 'admin']:
+        flash("Only authenticated users can access this page!", 'error')
+        return redirect(url_for('index'))
+    
+    # Get collection based on account type
+    if current_user.role == 'admin':
+        collection = ADMIN_COLLECTION
+    else:
+        collection = USERS_COLLECTION
+    
+    user_id = _coerce_object_id(current_user.id)
+    user_data = collection.find_one({"_id": user_id})
+    
+    if not user_data:
+        flash("User not found!", 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+        
+        # Change Password
+        if action == 'change_password':
+            current_password = request.form.get('current_password', '').strip()
+            new_password = request.form.get('new_password', '').strip()
+            confirm_password = request.form.get('confirm_password', '').strip()
+            
+            if not current_password or not new_password or not confirm_password:
+                flash('All password fields are required!', 'error')
+            elif len(new_password) < 6:
+                flash('New password must be at least 6 characters long!', 'error')
+            elif new_password != confirm_password:
+                flash('New passwords do not match!', 'error')
+            elif not check_password_hash(user_data.get('password', ''), current_password):
+                flash('Current password is incorrect!', 'error')
+            else:
+                new_hash = generate_password_hash(new_password)
+                collection.update_one(
+                    {"_id": user_id},
+                    {"$set": {"password": new_hash}}
+                )
+                flash('Password changed successfully!', 'success')
+                return redirect(url_for('user_profile'))
+        
+        # Change Email
+        elif action == 'change_email':
+            new_email = request.form.get('new_email', '').strip().lower()
+            password = request.form.get('password', '').strip()
+            
+            if not new_email or '@' not in new_email:
+                flash('Please provide a valid email address!', 'error')
+            elif not check_password_hash(user_data.get('password', ''), password):
+                flash('Password is incorrect!', 'error')
+            elif collection.find_one({"email": new_email, "_id": {"$ne": user_id}}):
+                flash('This email is already registered with another account!', 'error')
+            else:
+                collection.update_one(
+                    {"_id": user_id},
+                    {"$set": {"email": new_email}}
+                )
+                flash('Email changed successfully!', 'success')
+                return redirect(url_for('user_profile'))
+        
+        # Change Username
+        elif action == 'change_username':
+            new_username = request.form.get('new_username', '').strip()
+            password = request.form.get('password', '').strip()
+            
+            if not new_username or len(new_username) < 3:
+                flash('Username must be at least 3 characters long!', 'error')
+            elif not check_password_hash(user_data.get('password', ''), password):
+                flash('Password is incorrect!', 'error')
+            elif collection.find_one({"username": new_username, "_id": {"$ne": user_id}}):
+                flash('This username is already taken!', 'error')
+            else:
+                collection.update_one(
+                    {"_id": user_id},
+                    {"$set": {"username": new_username}}
+                )
+                flash('Username changed successfully!', 'success')
+                return redirect(url_for('user_profile'))
+    
+    return render_template('user_profile.html', user=user_data)
+
+
+# --- WISHLIST ROUTES ---
+WISHLIST_COLLECTION = db["wishlist"]
+
+@app.route('/wishlist')
+@login_required
+def user_wishlist():
+    """
+    Display user's wishlist items.
+    """
+    if current_user.role != 'customer':
+        flash("Only customers can access wishlist!", 'error')
+        return redirect(url_for('index'))
+    
+    user_id = _coerce_object_id(current_user.id)
+    wishlist_doc = WISHLIST_COLLECTION.find_one({"user_id": user_id})
+    
+    wishlist_items = []
+    if wishlist_doc and wishlist_doc.get('items'):
+        # Get product details for each wishlist item
+        product_ids = [_coerce_object_id(item_id) for item_id in wishlist_doc.get('items', [])]
+        products = db.catalog.find({"_id": {"$in": product_ids}})
+        wishlist_items = list(products)
+    
+    return render_template('user_wishlist.html', wishlist_items=wishlist_items)
+
+
+@app.route('/add-to-wishlist/<product_id>', methods=['POST'])
+@login_required
+def add_to_wishlist(product_id):
+    """
+    Add a product to user's wishlist.
+    """
+    if current_user.role != 'customer':
+        return jsonify({"success": False, "message": "Only customers can use wishlist"}), 403
+    
+    user_id = _coerce_object_id(current_user.id)
+    product_id_obj = _coerce_object_id(product_id)
+    
+    if not product_id_obj:
+        return jsonify({"success": False, "message": "Invalid product ID"}), 400
+    
+    WISHLIST_COLLECTION.update_one(
+        {"user_id": user_id},
+        {
+            "$addToSet": {"items": product_id_obj},
+            "$set": {"user_id": user_id, "updated_at": datetime.utcnow()}
+        },
+        upsert=True
+    )
+    
+    return jsonify({"success": True, "message": "Added to wishlist"})
+
+
+@app.route('/remove-from-wishlist/<product_id>', methods=['POST'])
+@login_required
+def remove_from_wishlist(product_id):
+    """
+    Remove a product from user's wishlist.
+    """
+    if current_user.role != 'customer':
+        return jsonify({"success": False, "message": "Only customers can use wishlist"}), 403
+    
+    user_id = _coerce_object_id(current_user.id)
+    product_id_obj = _coerce_object_id(product_id)
+    
+    if not product_id_obj:
+        return jsonify({"success": False, "message": "Invalid product ID"}), 400
+    
+    WISHLIST_COLLECTION.update_one(
+        {"user_id": user_id},
+        {"$pull": {"items": product_id_obj}}
+    )
+    
+    return jsonify({"success": True, "message": "Removed from wishlist"})
+
+
+# --- ADDRESS MANAGEMENT ROUTES ---
+ADDRESSES_COLLECTION = db["addresses"]
+
+@app.route('/addresses', methods=['GET', 'POST'])
+@login_required
+def user_addresses():
+    """
+    Display and manage user's saved addresses.
+    """
+    if current_user.role not in ['customer', 'admin']:
+        flash("Only authenticated users can manage addresses!", 'error')
+        return redirect(url_for('index'))
+    
+    user_id = _coerce_object_id(current_user.id)
+    addresses = list(ADDRESSES_COLLECTION.find({"user_id": user_id}).sort("is_default", -1))
+    
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+        
+        if action == 'add':
+            address_name = request.form.get('address_name', '').strip()
+            address_line = request.form.get('address_line', '').strip()
+            city = request.form.get('city', '').strip()
+            state = request.form.get('state', '').strip()
+            pincode = request.form.get('pincode', '').strip()
+            phone = request.form.get('phone', '').strip()
+            
+            if not all([address_name, address_line, city, state, pincode, phone]):
+                flash('All fields are required!', 'error')
+            elif len(pincode) != 6 or not pincode.isdigit():
+                flash('Pincode must be 6 digits!', 'error')
+            elif len(phone) < 10 or len(phone) > 10:
+                flash('Phone number must be 10 digits!', 'error')
+            else:
+                is_default = len(addresses) == 0  # First address is default
+                ADDRESSES_COLLECTION.insert_one({
+                    "user_id": user_id,
+                    "address_name": address_name,
+                    "address_line": address_line,
+                    "city": city,
+                    "state": state,
+                    "pincode": pincode,
+                    "phone": phone,
+                    "is_default": is_default,
+                    "created_at": datetime.utcnow()
+                })
+                flash('Address added successfully!', 'success')
+                return redirect(url_for('user_addresses'))
+        
+        elif action == 'set_default':
+            address_id = _coerce_object_id(request.form.get('address_id'))
+            if address_id:
+                ADDRESSES_COLLECTION.update_many(
+                    {"user_id": user_id},
+                    {"$set": {"is_default": False}}
+                )
+                ADDRESSES_COLLECTION.update_one(
+                    {"_id": address_id, "user_id": user_id},
+                    {"$set": {"is_default": True}}
+                )
+                flash('Default address updated!', 'success')
+                return redirect(url_for('user_addresses'))
+        
+        elif action == 'delete':
+            address_id = _coerce_object_id(request.form.get('address_id'))
+            if address_id:
+                ADDRESSES_COLLECTION.delete_one(
+                    {"_id": address_id, "user_id": user_id}
+                )
+                flash('Address deleted successfully!', 'success')
+                return redirect(url_for('user_addresses'))
+    
+    return render_template('user_addresses.html', addresses=addresses)
+
+
+@app.route('/address/<address_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_address(address_id):
+    """
+    Edit a saved address.
+    """
+    if current_user.role not in ['customer', 'admin']:
+        flash("Only authenticated users can edit addresses!", 'error')
+        return redirect(url_for('index'))
+    
+    user_id = _coerce_object_id(current_user.id)
+    address_id_obj = _coerce_object_id(address_id)
+    address = ADDRESSES_COLLECTION.find_one({"_id": address_id_obj, "user_id": user_id})
+    
+    if not address:
+        flash('Address not found!', 'error')
+        return redirect(url_for('user_addresses'))
+    
+    if request.method == 'POST':
+        address_name = request.form.get('address_name', '').strip()
+        address_line = request.form.get('address_line', '').strip()
+        city = request.form.get('city', '').strip()
+        state = request.form.get('state', '').strip()
+        pincode = request.form.get('pincode', '').strip()
+        phone = request.form.get('phone', '').strip()
+        
+        if not all([address_name, address_line, city, state, pincode, phone]):
+            flash('All fields are required!', 'error')
+        elif len(pincode) != 6 or not pincode.isdigit():
+            flash('Pincode must be 6 digits!', 'error')
+        elif len(phone) != 10 or not phone.isdigit():
+            flash('Phone number must be 10 digits!', 'error')
+        else:
+            ADDRESSES_COLLECTION.update_one(
+                {"_id": address_id_obj},
+                {
+                    "$set": {
+                        "address_name": address_name,
+                        "address_line": address_line,
+                        "city": city,
+                        "state": state,
+                        "pincode": pincode,
+                        "phone": phone,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            flash('Address updated successfully!', 'success')
+            return redirect(url_for('user_addresses'))
+    
+    return render_template('edit_address.html', address=address)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

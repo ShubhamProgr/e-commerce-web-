@@ -223,6 +223,35 @@
         border: 1px solid rgba(0,0,0,0.05);
     }
 
+    .wishlist-btn {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 1px solid rgba(0,0,0,0.05);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #d9534f;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        z-index: 10;
+    }
+
+    .wishlist-btn:hover {
+        transform: scale(1.1);
+        background: #f5e6e6;
+    }
+
+    .wishlist-btn[data-in-wishlist="true"] i {
+        font-weight: 900;
+    }
+
     .product-body {
         padding: 1.4rem;
         display: flex;
@@ -590,6 +619,9 @@
         <article class="product-card" style="animation-delay: {{ (loop.index0 * 0.04)|round(2) }}s;">
             <div class="product-media">
                 <span class="media-badge">Mota Fresh</span>
+                <button class="wishlist-btn" data-product-id="{{ product._id }}" {% if product._id|string in wishlist_data %}data-in-wishlist="true"{% endif %} title="Add to wishlist">
+                    <i class="fa-{% if product._id|string in wishlist_data %}solid{% else %}regular{% endif %} fa-heart"></i>
+                </button>
                 <img src="{{ product.image }}" alt="{{ product.item }}">
             </div>
             <div class="product-body">
@@ -694,6 +726,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Error decrementing cart:', error);
+            }
+        });
+    });
+
+    // Wishlist functionality
+    const wishlistBtns = document.querySelectorAll('.wishlist-btn');
+    wishlistBtns.forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const productId = btn.dataset.productId;
+            const isInWishlist = btn.getAttribute('data-in-wishlist') === 'true';
+            const endpoint = isInWishlist ? `/remove-from-wishlist/${productId}` : `/add-to-wishlist/${productId}`;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Toggle the wishlist state
+                        if (isInWishlist) {
+                            btn.removeAttribute('data-in-wishlist');
+                            btn.querySelector('i').classList.remove('fa-solid');
+                            btn.querySelector('i').classList.add('fa-regular');
+                        } else {
+                            btn.setAttribute('data-in-wishlist', 'true');
+                            btn.querySelector('i').classList.remove('fa-regular');
+                            btn.querySelector('i').classList.add('fa-solid');
+                        }
+                    }
+                } else if (response.status === 403) {
+                    // Not authenticated or not a customer
+                    window.location.href = "{{ url_for('login', next=url_for('index')) }}";
+                }
+            } catch (error) {
+                console.error('Error updating wishlist:', error);
             }
         });
     });

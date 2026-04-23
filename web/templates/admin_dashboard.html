@@ -392,9 +392,7 @@
                                 <td class="text-end">
                                     <div class="product-actions">
                                         <button class="btn-update" type="submit">Update</button>
-                                        <form method="POST" action="{{ url_for('delete_product', id=product._id) }}" style="display:inline;" onsubmit="return confirm('Delete this product? It will be removed from all carts.');">
-                                            <button class="btn-delete" type="submit">Delete</button>
-                                        </form>
+                                        <button class="btn-delete" type="button" onclick="deleteProduct('{{ product._id }}')">Delete</button>
                                     </div>
                                 </td>
                             </form>
@@ -497,4 +495,18 @@
         {% endif %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function deleteProduct(productId) {
+    if (confirm('Delete this product? It will be removed from all carts.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('delete_product', id='__ID__') }}".replace('__ID__', productId);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

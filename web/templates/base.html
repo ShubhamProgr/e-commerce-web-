@@ -218,6 +218,164 @@
                 padding-top: 1.4rem;
             }
         }
+
+        /* User Sidebar Styles */
+        .user-sidebar {
+            position: fixed;
+            top: 0;
+            right: -380px;
+            width: 380px;
+            height: 100vh;
+            background: var(--surface);
+            box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+            z-index: 1099;
+            transition: right 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid rgba(79, 165, 114, 0.1);
+        }
+
+        .user-sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1098;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(79, 165, 114, 0.1);
+            background: linear-gradient(135deg, rgba(118, 196, 143, 0.08), rgba(79, 165, 114, 0.05));
+        }
+
+        .sidebar-header h5 {
+            margin: 0;
+            color: var(--forest-900);
+            font-weight: 800;
+            font-family: 'Fraunces', serif;
+        }
+
+        .sidebar-header .btn-close {
+            padding: 0.25rem;
+            font-size: 1.2rem;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: var(--seed-200);
+            border-bottom: 1px solid rgba(79, 165, 114, 0.1);
+            color: var(--forest-900);
+            font-weight: 700;
+        }
+
+        .user-info i {
+            font-size: 2.2rem;
+            color: var(--leaf-500);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid rgba(79, 165, 114, 0.08);
+        }
+
+        .sidebar-menu li.divider {
+            height: 12px;
+            border: none;
+            background: rgba(79, 165, 114, 0.04);
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            padding: 1rem 1.5rem;
+            color: var(--ink-900);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        .sidebar-menu a i {
+            width: 20px;
+            text-align: center;
+            color: var(--leaf-500);
+            font-size: 1.1rem;
+        }
+
+        .sidebar-menu a:hover {
+            background: rgba(79, 165, 114, 0.08);
+            color: var(--forest-900);
+            padding-left: 1.8rem;
+        }
+
+        .sidebar-menu a.logout-link {
+            color: #e95c5c;
+        }
+
+        .sidebar-menu a.logout-link i {
+            color: #e95c5c;
+        }
+
+        .sidebar-menu a.logout-link:hover {
+            background: rgba(233, 92, 92, 0.1);
+        }
+
+        .sidebar-menu a.apply-admin-link {
+            color: #e9cf72 !important;
+            font-weight: 800;
+        }
+
+        .sidebar-menu a.apply-admin-link i {
+            color: #e9cf72 !important;
+        }
+
+        .sidebar-menu a.apply-admin-link:hover {
+            background: rgba(233, 207, 114, 0.15);
+        }
+
+        .user-profile-btn {
+            font-size: 1.5rem !important;
+            padding: 0.35rem 0.7rem !important;
+        }
+
+        @media (max-width: 768px) {
+            .user-sidebar {
+                width: 320px;
+                right: -320px;
+            }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -239,17 +397,13 @@
                     <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
                         {% if current_user.is_authenticated %}
                             {% if current_user.role == 'customer' %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Shop</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('view_cart') }}">Cart</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('order_history') }}">Orders</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('apply_for_admin') }}" style="color: #e9cf72 !important;"><i class="fas fa-star"></i> Apply Admin</a></li>
                             {% elif current_user.role == 'admin' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('customers_info') }}">Customers</a></li>
                             {% endif %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+                            <li class="nav-item"><a class="nav-link user-profile-btn" id="userProfileBtn" href="javascript:void(0);" onclick="toggleUserSidebar()"><i class="fas fa-user-circle"></i></a></li>
                         {% else %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Shop</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('view_cart') }}">Cart</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Register</a></li>
@@ -277,6 +431,38 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <!-- User Profile Mini Sidebar -->
+    {% if current_user.is_authenticated %}
+    <div id="userSidebar" class="user-sidebar">
+        <div class="sidebar-header">
+            <h5 class="mb-0">My Account</h5>
+            <button type="button" class="btn-close" onclick="toggleUserSidebar()"></button>
+        </div>
+        <div class="sidebar-content">
+            <div class="user-info">
+                <i class="fas fa-user-circle"></i>
+                <span>{{ current_user.username }}</span>
+            </div>
+            <ul class="sidebar-menu">
+                {% if current_user.role == 'customer' %}
+                <li><a href="{{ url_for('user_profile') }}"><i class="fas fa-lock"></i> Security & Password</a></li>
+                <li><a href="{{ url_for('user_wishlist') }}"><i class="fas fa-heart"></i> My Wishlist</a></li>
+                <li><a href="{{ url_for('order_history') }}"><i class="fas fa-history"></i> Order History</a></li>
+                <li><a href="{{ url_for('user_addresses') }}"><i class="fas fa-map-marker-alt"></i> Saved Addresses</a></li>
+                <li class="divider"></li>
+                <li><a href="{{ url_for('apply_for_admin') }}" class="apply-admin-link"><i class="fas fa-star"></i> Apply for Admin</a></li>
+                {% elif current_user.role == 'admin' %}
+                <li><a href="{{ url_for('user_profile') }}"><i class="fas fa-lock"></i> Security & Password</a></li>
+                <li><a href="{{ url_for('user_addresses') }}"><i class="fas fa-map-marker-alt"></i> Saved Addresses</a></li>
+                {% endif %}
+                <li class="divider"></li>
+                <li><a href="{{ url_for('logout') }}" class="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </div>
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleUserSidebar()"></div>
+    {% endif %}
 
     <footer class="site-footer">
         <div class="container">
@@ -330,6 +516,30 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleUserSidebar() {
+            const sidebar = document.getElementById('userSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        }
+
+        // Close sidebar when clicking on a link
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarLinks = document.querySelectorAll('.sidebar-menu a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // Don't close for logout link (let it navigate)
+                    if (!this.classList.contains('logout-link')) {
+                        toggleUserSidebar();
+                    }
+                });
+            });
+        });
+    </script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

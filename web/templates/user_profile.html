@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Security Settings | Mota Anaj{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        animation: cardIn 0.8s ease;
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, rgba(43, 103, 69, 0.1), rgba(79, 165, 114, 0.08));
+        border: 1px solid rgba(79, 165, 114, 0.2);
+        border-radius: 22px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: var(--leaf-400);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+    }
+
+    .profile-info h1 {
+        margin: 0;
+        color: var(--forest-900);
+        font-family: 'Fraunces', serif;
+        font-size: 2rem;
+    }
+
+    .profile-info p {
+        margin: 0.5rem 0 0;
+        color: var(--ink-600);
+        font-weight: 600;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+    }
+
+    .settings-card {
+        background: var(--surface);
+        border: 1px solid rgba(79, 165, 114, 0.15);
+        border-radius: 18px;
+        padding: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .settings-card:hover {
+        border-color: rgba(79, 165, 114, 0.3);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .settings-title {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 1.5rem;
+        font-weight: 800;
+        color: var(--forest-900);
+        font-size: 1.15rem;
+    }
+
+    .settings-title i {
+        color: var(--leaf-500);
+        font-size: 1.3rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.2rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+        color: var(--forest-900);
+        font-size: 0.95rem;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(79, 165, 114, 0.25);
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--leaf-500);
+        box-shadow: 0 0 0 3px rgba(79, 165, 114, 0.1);
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 0.9rem;
+        background: linear-gradient(135deg, var(--forest-800), var(--leaf-500));
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 0.5rem;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(79, 165, 114, 0.3);
+    }
+
+    .form-text {
+        display: block;
+        font-size: 0.85rem;
+        color: var(--ink-600);
+        margin-top: 0.4rem;
+    }
+
+    .password-requirements {
+        background: rgba(118, 196, 143, 0.1);
+        border-left: 3px solid var(--leaf-500);
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        color: var(--forest-900);
+        margin-bottom: 1rem;
+    }
+
+    @keyframes cardIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .profile-info h1 {
+            font-size: 1.6rem;
+        }
+
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <i class="fas fa-user"></i>
+        </div>
+        <div class="profile-info">
+            <h1>{{ user.username }}</h1>
+            <p><i class="fas fa-envelope"></i> {{ user.email }}</p>
+        </div>
+    </div>
+
+    <div class="settings-grid">
+        <!-- Change Password -->
+        <div class="settings-card">
+            <div class="settings-title">
+                <i class="fas fa-lock"></i>
+                Change Password
+            </div>
+            <form method="POST">
+                <input type="hidden" name="action" value="change_password">
+                <div class="password-requirements">
+                    <strong>Password must be:</strong><br>
+                    • At least 6 characters long
+                </div>
+                <div class="form-group">
+                    <label for="current_password">Current Password</label>
+                    <input type="password" id="current_password" name="current_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    <input type="password" id="new_password" name="new_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                </div>
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-check"></i> Update Password
+                </button>
+            </form>
+        </div>
+
+        <!-- Change Email -->
+        <div class="settings-card">
+            <div class="settings-title">
+                <i class="fas fa-envelope"></i>
+                Change Email
+            </div>
+            <form method="POST">
+                <input type="hidden" name="action" value="change_email">
+                <div class="form-group">
+                    <label for="current_email">Current Email</label>
+                    <input type="email" id="current_email" value="{{ user.email }}" disabled>
+                    <small class="form-text">Your registered email</small>
+                </div>
+                <div class="form-group">
+                    <label for="new_email">New Email</label>
+                    <input type="email" id="new_email" name="new_email" required>
+                </div>
+                <div class="form-group">
+                    <label for="email_password">Confirm with Password</label>
+                    <input type="password" id="email_password" name="password" required>
+                    <small class="form-text">Enter your password to confirm this change</small>
+                </div>
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-check"></i> Update Email
+                </button>
+            </form>
+        </div>
+
+        <!-- Change Username -->
+        <div class="settings-card">
+            <div class="settings-title">
+                <i class="fas fa-user-tag"></i>
+                Change Username
+            </div>
+            <form method="POST">
+                <input type="hidden" name="action" value="change_username">
+                <div class="form-group">
+                    <label for="current_username">Current Username</label>
+                    <input type="text" id="current_username" value="{{ user.username }}" disabled>
+                    <small class="form-text">Your current username</small>
+                </div>
+                <div class="form-group">
+                    <label for="new_username">New Username</label>
+                    <input type="text" id="new_username" name="new_username" placeholder="At least 3 characters" required>
+                </div>
+                <div class="form-group">
+                    <label for="username_password">Confirm with Password</label>
+                    <input type="password" id="username_password" name="password" required>
+                    <small class="form-text">Enter your password to confirm this change</small>
+                </div>
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-check"></i> Update Username
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

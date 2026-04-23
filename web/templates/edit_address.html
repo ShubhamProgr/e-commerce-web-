@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Address | Mota Anaj{% endblock %}
+
+{% block extra_head %}
+<style>
+    .edit-address-container {
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+
+    .edit-form {
+        background: var(--surface);
+        border: 1px solid rgba(79, 165, 114, 0.15);
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        animation: cardIn 0.8s ease;
+    }
+
+    .edit-form h1 {
+        color: var(--forest-900);
+        font-family: 'Fraunces', serif;
+        margin: 0 0 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .edit-form h1 i {
+        color: var(--leaf-500);
+        font-size: 1.8rem;
+    }
+
+    .form-intro {
+        color: var(--ink-600);
+        margin-bottom: 2rem;
+        font-weight: 600;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.2rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: 700;
+        color: var(--forest-900);
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .form-group input {
+        padding: 0.8rem 1rem;
+        border: 1px solid rgba(79, 165, 114, 0.25);
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--leaf-500);
+        box-shadow: 0 0 0 3px rgba(79, 165, 114, 0.1);
+    }
+
+    .required {
+        color: #e95c5c;
+        margin-left: 0.3rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2.5rem;
+        border-top: 1px solid rgba(79, 165, 114, 0.1);
+        padding-top: 2rem;
+    }
+
+    .btn-primary {
+        flex: 1;
+        padding: 0.95rem;
+        background: linear-gradient(135deg, var(--forest-800), var(--leaf-500));
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(79, 165, 114, 0.3);
+    }
+
+    .btn-secondary {
+        flex: 1;
+        padding: 0.95rem;
+        background: rgba(79, 165, 114, 0.1);
+        color: var(--leaf-500);
+        border: none;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(79, 165, 114, 0.15);
+        transform: translateY(-1px);
+    }
+
+    .breadcrumb {
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .breadcrumb a {
+        color: var(--leaf-500);
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+
+    .breadcrumb a:hover {
+        color: var(--leaf-400);
+    }
+
+    .breadcrumb span {
+        color: var(--ink-600);
+    }
+
+    @keyframes cardIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .edit-form {
+            padding: 1.5rem;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-address-container">
+    <div class="breadcrumb">
+        <a href="{{ url_for('user_addresses') }}">
+            <i class="fas fa-map-marker-alt"></i> My Addresses
+        </a>
+        <span>/</span>
+        <span>Edit Address</span>
+    </div>
+
+    <div class="edit-form">
+        <h1>
+            <i class="fas fa-edit"></i>
+            Edit Address
+        </h1>
+        <p class="form-intro">Update your address details below.</p>
+
+        <form method="POST">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="address_name">
+                        Address Name<span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="address_name" 
+                        name="address_name" 
+                        value="{{ address.address_name }}"
+                        placeholder="e.g., Home, Office, Summer House" 
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="address_line">
+                        Street Address<span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="address_line" 
+                        name="address_line" 
+                        value="{{ address.address_line }}"
+                        placeholder="House no., Building name, Road name" 
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="city">
+                        City<span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="city" 
+                        name="city" 
+                        value="{{ address.city }}"
+                        placeholder="City" 
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="state">
+                        State<span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="state" 
+                        name="state" 
+                        value="{{ address.state }}"
+                        placeholder="State/Province" 
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pincode">
+                        Pincode<span class="required">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="pincode" 
+                        name="pincode" 
+                        value="{{ address.pincode }}"
+                        placeholder="6-digit pincode" 
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="phone">
+                        Phone Number<span class="required">*</span>
+                    </label>
+                    <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone" 
+                        value="{{ address.phone }}"
+                        placeholder="10-digit mobile number" 
+                        maxlength="10"
+                        pattern="[0-9]{10}"
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{{ url_for('user_addresses') }}" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.6rem;">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
